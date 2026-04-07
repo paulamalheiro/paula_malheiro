@@ -498,7 +498,7 @@ const About = () => (
         className="rounded-3xl overflow-hidden shadow-2xl"
       >
         <img 
-          src="/paula-perfil.jpg" 
+          src="/pm_perfil.jpeg" 
           alt="Paula Malheiro" 
           width={800}
           height={1000}
