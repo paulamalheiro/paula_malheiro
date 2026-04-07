@@ -452,7 +452,7 @@ const Footer = () => (
           <li><a href="#" className="hover:text-primary transition-colors">Mapa do Site</a></li>
         </ul>
         <img 
-          src="/paula_logo.png" 
+          src="/logo.png" 
           alt="Logo Paula Malheiro" 
           width={120} 
           height={40} 
