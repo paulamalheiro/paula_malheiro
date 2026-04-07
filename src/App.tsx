@@ -27,7 +27,7 @@ const Navbar = () => (
           <div className="text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1.5 font-medium">Corretora de Imóveis</div>
         </div>
         <img 
-          src="/logo_v3.png" 
+          src="/logo.png" 
           alt="Logo VCA" 
           width={110} 
           height={40} 
@@ -129,7 +129,7 @@ const Hero = () => (
         className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl"
       >
         <img 
-          src="/perfil_inicial.JPG.jpeg" 
+          src="/pm_perfil.jpeg" 
           alt="Paula Malheiro" 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
@@ -231,7 +231,7 @@ e muito mais!`,
       title: 'UNI House',
       location: 'Região do Terras Alphaville',
       range: '2 Quartos + Quintal',
-      image: '/uni-house.png_v3.jpeg',
+      image: '/uni-house.png.jpeg',
       tag: 'LANÇAMENTO',
       description: `Condomínio de casas soltas com quintais de 30 a 130m², o UNI House é lançamento da VCA Construtora com aquela área de lazer maravilhosa e cheia de muito verde e qualidade de vida! 
 
@@ -244,7 +244,7 @@ Opções de pagamento: Financiamento Caixa e plano exclusivo para investidor em 
       title: 'Connect Tech II - bairro planejado murado',
       location: 'Área nobre do Baron Connect',
       range: 'Bairro Planejado Murado',
-      image: '/Connect-Tech-2_v3.jpg',
+      image: '/Connect-Tech-2.jpg',
       tag: 'LANÇAMENTO',
       description: `Connect Tech II é um bairro planejado murado localizado em uma área nobre do Baron Connect (bairro planejado), que contará com estrutura de lazer, ruas pavimentadas e amplas, água encanada, iluminação em led, rede de fibra óptica e paisagismo caprichado. 
 
@@ -263,7 +263,7 @@ Quem investe em terra, não erra!`,
       title: 'Dona Lys - Apartamentos próximo a Olívia Flores',
       location: 'Próximo a Olívia Flores',
       range: 'Duo Residences',
-      image: '/dona-lys_v3.jpeg',
+      image: '/dona-lys.jpeg',
       tag: 'LANÇAMENTO',
       description: `São "duo residences" com opção de térreo com quintal, ou 1º andar, próximo a Olivia Flores com aquela área de lazer maravilhosa que só a VCA faz.
 
@@ -280,7 +280,7 @@ Solicite sua simulação agora mesmo!`,
       title: 'DON OESTE - próximo ao CAIC, Lagoa das Bateias',
       location: 'Próximo ao CAIC, Lagoa das Bateias',
       range: 'Duo Residences',
-      image: '/DON-OESTE_v3.jpeg',
+      image: '/DON-OESTE.jpeg',
       tag: 'LANÇAMENTO',
       description: `O 1º VCA na zona Oeste de Conquista chegou!
 
@@ -347,7 +347,7 @@ const Benefits = () => (
 
       <div className="relative">
         <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative">
-          <img src="/velli_v3.jpeg" alt="Investimento" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <img src="/velli.jpeg" alt="Investimento" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         </div>
         <div className="absolute -bottom-8 -left-8 bg-white p-8 rounded-2xl shadow-xl max-w-xs border border-gray-100">
           <p className="italic text-gray-600 text-sm mb-4">
@@ -355,7 +355,7 @@ const Benefits = () => (
           </p>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-primary/20 relative overflow-hidden">
-              <img src="/velli_v3.jpeg" alt="Paula Malheiro" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              <img src="/velli.jpeg" alt="Paula Malheiro" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
             </div>
             <div>
               <span className="block font-bold text-primary text-sm leading-none">Paula Malheiro</span>
@@ -413,7 +413,7 @@ const Footer = () => (
         <div className="flex flex-col gap-4">
           <div className="text-2xl font-sans text-primary font-bold leading-none tracking-tight">Paula Malheiro</div>
           <img 
-            src="/logo_v3.png" 
+            src="/logo.png" 
             alt="Logo VCA" 
             width={140} 
             height={50} 
@@ -452,7 +452,7 @@ const Footer = () => (
           <li><a href="#" className="hover:text-primary transition-colors">Mapa do Site</a></li>
         </ul>
         <img 
-          src="/logo_v3.png" 
+          src="/logo.png" 
           alt="Logo Paula Malheiro" 
           width={120} 
           height={40} 
@@ -498,7 +498,7 @@ const About = () => (
         className="rounded-3xl overflow-hidden shadow-2xl"
       >
         <img 
-          src="/pm_perfil_v3.jpeg" 
+          src="/pm_perfil.jpeg" 
           alt="Paula Malheiro" 
           width={800}
           height={1000}
@@ -760,13 +760,13 @@ const Progress = () => (
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {[
-          { label: 'Bellator', img: '/bellator_v3.jpeg' },
-          { label: 'Amado', img: '/amado_v3.jpeg' },
-          { label: 'Verso', img: '/verso_v3.jpeg', link: 'https://www.instagram.com/reel/DT8XsQojhti/?igsh=MThyOHU0eWQ4ajNhaw==' },
-          { label: 'Baron', img: '/baron_v3.jpeg' },
-          { label: 'Sculptor', img: '/sculptor_v3.jpeg' },
-          { label: 'Uni', img: '/uni_v3.jpeg', link: 'https://www.instagram.com/reel/DWWQfOYDuAn/?igsh=MXFlamt6aGZlZWFndQ==' },
-          { label: 'Vila', img: '/vila_v3.jpeg' }
+          { label: 'Bellator', img: '/bellator.jpeg' },
+          { label: 'Amado', img: '/amado.jpeg' },
+          { label: 'Verso', img: '/verso.jpeg', link: 'https://www.instagram.com/reel/DT8XsQojhti/?igsh=MThyOHU0eWQ4ajNhaw==' },
+          { label: 'Baron', img: '/baron.jpeg' },
+          { label: 'Sculptor', img: '/sculptor.jpeg' },
+          { label: 'Uni', img: '/uni.jpeg', link: 'https://www.instagram.com/reel/DWWQfOYDuAn/?igsh=MXFlamt6aGZlZWFndQ==' },
+          { label: 'Vila', img: '/vila.jpeg' }
         ].map((item, idx) => {
           const Wrapper = item.link ? 'a' : 'div';
           return (
