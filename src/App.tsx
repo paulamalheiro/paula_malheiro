@@ -129,7 +129,7 @@ const Hero = () => (
         className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl"
       >
         <img 
-          src="/perfil-inicial.JPG.jpeg" 
+          src="/perfil_inicial.JPG.jpeg" 
           alt="Paula Malheiro" 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
