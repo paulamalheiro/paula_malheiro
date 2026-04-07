@@ -140,7 +140,7 @@ const Hero = () => (
   </section>
 );
 
-const ProjectCard = ({ project, idx }: { project: any, idx: number }) => {
+const ProjectCard = ({ project, idx }: { project: any, idx: number, key?: any }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
