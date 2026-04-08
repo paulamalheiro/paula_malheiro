@@ -28,7 +28,7 @@ const Navbar = () => (
           <div className="text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1.5 font-medium">Corretora de Imóveis</div>
         </div>
         <img 
-          src={getImageUrl('/logo.png')} 
+          src={getImageUrl('/logo.png.PNG')} 
           alt="Logo VCA" 
           width={110} 
           height={40} 
@@ -130,7 +130,7 @@ const Hero = () => (
         className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl"
       >
         <img 
-          src={getImageUrl('/paula-hero.jpg')} 
+          src={getImageUrl('/paula-hero.jpeg')} 
           alt="Paula Malheiro" 
           className="w-full h-full object-cover"
           referrerPolicy="no-referrer"
@@ -208,7 +208,7 @@ const FeaturedProjects = () => {
       title: 'DUQUE Lavenir Residence',
       location: 'Próximo a Olívia Flores',
       range: 'Casas Soltas',
-      image: getImageUrl('/duque-lavenir.jpeg'),
+      image: getImageUrl('/duque-lavenir.png'),
       tag: 'LANÇAMENTO',
       description: `Casas soltas com duas opções de planta: térrea com 3 suítes e reforço estrutural, possibilidade de ampliação, ou duplex, com 4 suites + sala íntima + home office. 
 
@@ -232,7 +232,7 @@ e muito mais!`,
       title: 'UNI House',
       location: 'Região do Terras Alphaville',
       range: '2 Quartos + Quintal',
-      image: getImageUrl('/uni-house.png'),
+      image: getImageUrl('/uni-house.png.jpeg'),
       tag: 'LANÇAMENTO',
       description: `Condomínio de casas soltas com quintais de 30 a 130m², o UNI House é lançamento da VCA Construtora com aquela área de lazer maravilhosa e cheia de muito verde e qualidade de vida! 
 
@@ -245,7 +245,7 @@ Opções de pagamento: Financiamento Caixa e plano exclusivo para investidor em 
       title: 'Connect Tech II - bairro planejado murado',
       location: 'Área nobre do Baron Connect',
       range: 'Bairro Planejado Murado',
-      image: getImageUrl('/connect-tech.jpeg'),
+      image: getImageUrl('/Connect-Tech.jpg'),
       tag: 'LANÇAMENTO',
       description: `Connect Tech II é um bairro planejado murado localizado em uma área nobre do Baron Connect (bairro planejado), que contará com estrutura de lazer, ruas pavimentadas e amplas, água encanada, iluminação em led, rede de fibra óptica e paisagismo caprichado. 
 
@@ -281,7 +281,7 @@ Solicite sua simulação agora mesmo!`,
       title: 'DON OESTE - próximo ao CAIC, Lagoa das Bateias',
       location: 'Próximo ao CAIC, Lagoa das Bateias',
       range: 'Duo Residences',
-      image: getImageUrl('/don-oeste.jpeg'),
+      image: getImageUrl('/DON-OESTE.jpeg'),
       tag: 'LANÇAMENTO',
       description: `O 1º VCA na zona Oeste de Conquista chegou!
 
@@ -414,7 +414,7 @@ const Footer = () => (
         <div className="flex flex-col gap-4">
           <div className="text-2xl font-sans text-primary font-bold leading-none tracking-tight">Paula Malheiro</div>
           <img 
-            src={getImageUrl('/logo.png')} 
+            src={getImageUrl('/logo.png.PNG')} 
             alt="Logo VCA" 
             width={140} 
             height={50} 
@@ -453,7 +453,7 @@ const Footer = () => (
           <li><a href="#" className="hover:text-primary transition-colors">Mapa do Site</a></li>
         </ul>
         <img 
-          src={getImageUrl('/logo.png')} 
+          src={getImageUrl('/logo.png.PNG')} 
           alt="Logo Paula Malheiro" 
           width={120} 
           height={40} 
