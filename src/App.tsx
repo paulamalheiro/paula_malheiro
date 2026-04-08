@@ -551,6 +551,7 @@ const Simulation = () => {
   const [formData, setFormData] = useState({
     nome: '',
     dataNascimento: '',
+    estadoCivil: 'Solteiro(a)',
     profissao: '',
     renda: '',
     dependentes: 'Não',
@@ -566,6 +567,7 @@ const Simulation = () => {
     const message = `*Nova Simulação de Financiamento*\n\n` +
       `*Nome:* ${formData.nome}\n` +
       `*Data de Nascimento:* ${formData.dataNascimento}\n` +
+      `*Estado Civil:* ${formData.estadoCivil}\n` +
       `*Profissão:* ${formData.profissao}\n` +
       `*Renda:* ${formData.renda}\n` +
       `*Possui dependentes:* ${formData.dependentes}\n` +
@@ -643,6 +645,22 @@ const Simulation = () => {
                     value={formData.dataNascimento}
                     onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Estado Civil</label>
+                  <select 
+                    required
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all bg-white"
+                    value={formData.estadoCivil}
+                    onChange={(e) => setFormData({...formData, estadoCivil: e.target.value})}
+                  >
+                    <option value="Solteiro(a)">Solteiro(a)</option>
+                    <option value="Casado(a)">Casado(a)</option>
+                    <option value="Divorciado(a)">Divorciado(a)</option>
+                    <option value="Viúvo(a)">Viúvo(a)</option>
+                    <option value="União Estável">União Estável</option>
+                  </select>
                 </div>
 
                 <div className="space-y-2">
@@ -740,62 +758,99 @@ const Simulation = () => {
   );
 };
 
-const Progress = () => (
-  <section id="construction" className="py-24 bg-white">
-    <div className="max-w-7xl mx-auto px-4">
-      <div className="mb-16 text-center">
-        <h2 className="text-4xl font-sans text-primary mb-4">Evolução das Obras</h2>
-        <p className="text-gray-600">Confira o acompanhamento real de cada etapa dos nossos empreendimentos.</p>
-      </div>
+const Progress = () => {
+  const [activeGallery, setActiveGallery] = useState<string[] | null>(null);
 
-      <div className="flex justify-center mb-12">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="bg-accent text-white px-12 py-4 rounded-full font-bold text-sm uppercase tracking-[0.5em] shadow-xl shadow-accent/30 animate-pulse"
-        >
-          Aguardem
-        </motion.div>
-      </div>
+  return (
+    <section id="construction" className="py-24 bg-white relative">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl font-sans text-primary mb-4">Evolução das Obras</h2>
+          <p className="text-gray-600">Confira o acompanhamento real de cada etapa dos nossos empreendimentos.</p>
+        </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        {[
-          { label: 'Bellator', img: getImageUrl('/bellator.jpeg') },
-          { label: 'Amado', img: getImageUrl('/amado.jpeg') },
-          { label: 'Verso', img: getImageUrl('/verso.jpeg'), link: 'https://www.instagram.com/reel/DT8XsQojhti/?igsh=MThyOHU0eWQ4ajNhaw==' },
-          { label: 'Baron', img: getImageUrl('/baron.jpeg') },
-          { label: 'Sculptor', img: getImageUrl('/sculptor.jpeg') },
-          { label: 'Uni', img: getImageUrl('/uni.jpeg'), link: 'https://www.instagram.com/reel/DWWQfOYDuAn/?igsh=MXFlamt6aGZlZWFndQ==' },
-          { label: 'Vila', img: getImageUrl('/vila.jpeg') }
-        ].map((item, idx) => {
-          const Wrapper = item.link ? 'a' : 'div';
-          return (
-            <motion.div 
-              key={idx}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: idx * 0.1 }}
-              className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-md"
-            >
-              <Wrapper 
-                href={item.link} 
-                target={item.link ? "_blank" : undefined}
-                className={`block w-full h-full ${item.link ? 'cursor-pointer' : ''}`}
+        <div className="flex justify-center mb-12">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="bg-accent text-white px-12 py-4 rounded-full font-bold text-sm uppercase tracking-[0.5em] shadow-xl shadow-accent/30 animate-pulse"
+          >
+            Aguardem
+          </motion.div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          {[
+            { label: 'Bellator', img: getImageUrl('/bellator.jpeg') },
+            { label: 'Amado', img: getImageUrl('/amado.jpeg') },
+            { label: 'Verso', img: getImageUrl('/verso.jpeg'), link: 'https://www.instagram.com/reel/DT8XsQojhti/?igsh=MThyOHU0eWQ4ajNhaw==' },
+            { label: 'Baron', img: getImageUrl('/baron.jpeg') },
+            { label: 'Sculptor', img: getImageUrl('/sculptor.jpeg') },
+            { label: 'Uni', img: getImageUrl('/uni.jpeg'), link: 'https://www.instagram.com/reel/DWWQfOYDuAn/?igsh=MXFlamt6aGZlZWFndQ==' },
+            { label: 'Vila', img: getImageUrl('/vila.jpeg'), gallery: [getImageUrl('/vila1.jpeg'), getImageUrl('/vila2.jpeg'), getImageUrl('/vila3.jpeg')] }
+          ].map((item, idx) => {
+            const Wrapper = item.link ? 'a' : 'div';
+            return (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-md"
               >
-                <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
-                  <span className="text-white font-bold text-xs">{item.label}</span>
-                </div>
-              </Wrapper>
-            </motion.div>
-          );
-        })}
+                <Wrapper 
+                  href={item.link} 
+                  target={item.link ? "_blank" : undefined}
+                  onClick={() => item.gallery ? setActiveGallery(item.gallery) : undefined}
+                  className={`block w-full h-full ${item.link || item.gallery ? 'cursor-pointer' : ''}`}
+                >
+                  <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
+                    <span className="text-white font-bold text-xs">{item.label}</span>
+                  </div>
+                </Wrapper>
+              </motion.div>
+            );
+          })}
+        </div>
       </div>
-    </div>
-  </section>
-);
+
+      <AnimatePresence>
+        {activeGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4"
+          >
+            <button 
+              onClick={() => setActiveGallery(null)}
+              className="absolute top-6 right-6 text-white/70 hover:text-white z-10 transition-colors"
+            >
+              <X size={36} />
+            </button>
+            <div className="w-full max-w-5xl overflow-x-auto flex gap-6 snap-x snap-mandatory pb-4 scrollbar-hide">
+              {activeGallery.map((img, i) => (
+                <img 
+                  key={i} 
+                  src={img} 
+                  alt={`Gallery ${i}`} 
+                  className="w-full max-h-[85vh] object-contain snap-center shrink-0 rounded-lg"
+                  referrerPolicy="no-referrer"
+                />
+              ))}
+            </div>
+            <div className="absolute bottom-6 left-0 right-0 text-center text-white/50 text-sm">
+              Deslize para ver mais
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+};
 
 // --- Main Page ---
 
