@@ -21,18 +21,16 @@ const WhatsAppIcon = ({ size = 24, className = "" }: { size?: number, className?
 
 const Navbar = () => (
   <nav className="sticky top-0 z-40 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3 shrink-0">
-        <div className="hidden lg:flex flex-col border-r border-gray-200 pr-4 text-right">
-          <div className="text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
-          <div className="text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1.5 font-medium">Corretora de Imóveis</div>
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <div className="flex flex-col border-r border-gray-200 pr-2 sm:pr-4 text-right">
+          <div className="text-[16px] sm:text-2xl lg:text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
+          <div className="text-[7px] sm:text-[10px] lg:text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1 sm:mt-1.5 font-medium">Corretora de Imóveis</div>
         </div>
         <img 
           src={getImageUrl('/logo.png.PNG')} 
           alt="Logo VCA" 
-          width={110} 
-          height={40} 
-          className="object-contain"
+          className="w-[50px] sm:w-[80px] lg:w-[110px] object-contain"
           referrerPolicy="no-referrer"
         />
       </div>
@@ -44,24 +42,24 @@ const Navbar = () => (
         <a href="#about" className="hover:text-primary transition-colors whitespace-nowrap">Sobre Mim</a>
         <a href="#contact" className="hover:text-primary transition-colors whitespace-nowrap">Contato</a>
       </div>
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <a 
           href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
           target="_blank"
-          className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-sm hover:scale-110 transition-all"
+          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-sm hover:scale-110 transition-all"
           title="Instagram"
         >
-          <Instagram size={18} />
+          <Instagram size={16} />
         </a>
         <a 
           href="https://wa.me/5577991465337"
           target="_blank"
-          className="bg-[#25D366] text-white px-5 py-2.5 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md flex items-center gap-2"
+          className="bg-[#25D366] text-white p-2 sm:px-5 sm:py-2.5 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md flex items-center gap-2"
         >
-          <WhatsAppIcon size={18} />
+          <WhatsAppIcon size={16} />
           <span className="hidden sm:inline">WhatsApp</span>
         </a>
-        <button className="xl:hidden text-gray-600 p-2">
+        <button className="xl:hidden text-gray-600 p-1 sm:p-2">
           <Menu size={24} />
         </button>
       </div>
