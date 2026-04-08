@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'; // Force UI sync
 import { motion, AnimatePresence } from 'motion/react';
-import { X, CheckCircle2, MapPin, Phone, Mail, Instagram, Linkedin, Menu, ArrowRight, Building2, TrendingUp, ShieldCheck, Wallet } from 'lucide-react';
+import { X, CheckCircle2, MapPin, Phone, Mail, Instagram, Linkedin, Menu, ArrowRight, Building2, TrendingUp, ShieldCheck, Wallet, Clock } from 'lucide-react';
 import { getImageUrl } from './lib/supabase';
 
 // --- Icons ---
@@ -19,53 +19,77 @@ const WhatsAppIcon = ({ size = 24, className = "" }: { size?: number, className?
 
 // --- Components ---
 
-const Navbar = () => (
-  <nav className="sticky top-0 z-40 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-    <div className="max-w-7xl mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <div className="flex flex-col border-r border-gray-200 pr-2 sm:pr-4 text-right">
-          <div className="text-[16px] sm:text-2xl lg:text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
-          <div className="text-[7px] sm:text-[10px] lg:text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1 sm:mt-1.5 font-medium">Corretora de Imóveis</div>
+const Navbar = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  return (
+    <nav className="sticky top-0 z-40 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex flex-col border-r border-gray-200 pr-2 sm:pr-4 text-right">
+            <div className="text-[16px] sm:text-2xl lg:text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
+            <div className="text-[7px] sm:text-[10px] lg:text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1 sm:mt-1.5 font-medium">Corretora de Imóveis</div>
+          </div>
+          <img 
+            src={getImageUrl('/logo.png.PNG')} 
+            alt="Logo VCA" 
+            className="w-[50px] sm:w-[80px] lg:w-[110px] object-contain"
+            referrerPolicy="no-referrer"
+          />
         </div>
-        <img 
-          src={getImageUrl('/logo.png.PNG')} 
-          alt="Logo VCA" 
-          className="w-[50px] sm:w-[80px] lg:w-[110px] object-contain"
-          referrerPolicy="no-referrer"
-        />
+        <div className="hidden xl:flex items-center justify-center gap-6 text-[13px] font-semibold text-gray-600 flex-1">
+          <a href="#home" className="hover:text-primary transition-colors whitespace-nowrap">Início</a>
+          <a href="#projects" className="hover:text-primary transition-colors whitespace-nowrap">Empreendimentos</a>
+          <a href="#simulation" className="hover:text-primary transition-colors whitespace-nowrap">Simulação</a>
+          <a href="#construction" className="hover:text-primary transition-colors whitespace-nowrap">Evolução das Obras</a>
+          <a href="#about" className="hover:text-primary transition-colors whitespace-nowrap">Sobre Mim</a>
+          <a href="#contact" className="hover:text-primary transition-colors whitespace-nowrap">Contato</a>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <a 
+            href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
+            target="_blank"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-sm hover:scale-110 transition-all"
+            title="Instagram"
+          >
+            <Instagram size={16} />
+          </a>
+          <a 
+            href="https://wa.me/5577991465337"
+            target="_blank"
+            className="bg-[#25D366] text-white p-2 sm:px-5 sm:py-2.5 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md flex items-center gap-2"
+          >
+            <WhatsAppIcon size={16} />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="xl:hidden text-gray-600 p-1 sm:p-2">
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </div>
-      <div className="hidden xl:flex items-center justify-center gap-6 text-[13px] font-semibold text-gray-600 flex-1">
-        <a href="#home" className="hover:text-primary transition-colors whitespace-nowrap">Início</a>
-        <a href="#projects" className="hover:text-primary transition-colors whitespace-nowrap">Empreendimentos</a>
-        <a href="#simulation" className="hover:text-primary transition-colors whitespace-nowrap">Simulação</a>
-        <a href="#construction" className="hover:text-primary transition-colors whitespace-nowrap">Evolução das Obras</a>
-        <a href="#about" className="hover:text-primary transition-colors whitespace-nowrap">Sobre Mim</a>
-        <a href="#contact" className="hover:text-primary transition-colors whitespace-nowrap">Contato</a>
-      </div>
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        <a 
-          href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
-          target="_blank"
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-sm hover:scale-110 transition-all"
-          title="Instagram"
-        >
-          <Instagram size={16} />
-        </a>
-        <a 
-          href="https://wa.me/5577991465337"
-          target="_blank"
-          className="bg-[#25D366] text-white p-2 sm:px-5 sm:py-2.5 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md flex items-center gap-2"
-        >
-          <WhatsAppIcon size={16} />
-          <span className="hidden sm:inline">WhatsApp</span>
-        </a>
-        <button className="xl:hidden text-gray-600 p-1 sm:p-2">
-          <Menu size={24} />
-        </button>
-      </div>
-    </div>
-  </nav>
-);
+      
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="xl:hidden bg-white border-b border-gray-100 overflow-hidden"
+          >
+            <div className="flex flex-col px-4 py-4 space-y-4 text-sm font-semibold text-gray-600">
+              <a href="#home" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Início</a>
+              <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Empreendimentos</a>
+              <a href="#simulation" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Simulação</a>
+              <a href="#construction" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Evolução das Obras</a>
+              <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Sobre Mim</a>
+              <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Contato</a>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
 
 const Hero = () => (
   <section id="home" className="relative pt-12 pb-24 overflow-hidden">
@@ -434,12 +458,12 @@ const Footer = () => (
       <div>
         <h4 className="font-bold text-gray-800 mb-6 uppercase text-xs tracking-widest">Navegação</h4>
         <ul className="space-y-4 text-sm text-gray-500">
-          <li><a href="#" className="hover:text-primary transition-colors">Início</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Sobre Mim</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Empreendimentos</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Simulação</a></li>
+          <li><a href="#home" className="hover:text-primary transition-colors">Início</a></li>
+          <li><a href="#about" className="hover:text-primary transition-colors">Sobre Mim</a></li>
+          <li><a href="#projects" className="hover:text-primary transition-colors">Empreendimentos</a></li>
+          <li><a href="#simulation" className="hover:text-primary transition-colors">Simulação</a></li>
           <li><a href="#clients" className="hover:text-primary transition-colors">Clientes</a></li>
-          <li><a href="#" className="hover:text-primary transition-colors">Contato</a></li>
+          <li><a href="#contact" className="hover:text-primary transition-colors">Contato</a></li>
         </ul>
       </div>
 
@@ -451,7 +475,7 @@ const Footer = () => (
           <li><a href="#" className="hover:text-primary transition-colors">Mapa do Site</a></li>
         </ul>
         <img 
-          src={getImageUrl('/logo.png.PNG')} 
+          src={getImageUrl('/pm_logo.png')} 
           alt="Logo Paula Malheiro" 
           width={120} 
           height={40} 
@@ -758,6 +782,7 @@ const Simulation = () => {
 
 const Progress = () => {
   const [activeGallery, setActiveGallery] = useState<string[] | null>(null);
+  const [showAguardem, setShowAguardem] = useState(false);
 
   return (
     <section id="construction" className="py-24 bg-white relative">
@@ -768,14 +793,9 @@ const Progress = () => {
         </div>
 
         <div className="flex justify-center mb-12">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="bg-accent text-white px-12 py-4 rounded-full font-bold text-sm uppercase tracking-[0.5em] shadow-xl shadow-accent/30 animate-pulse"
-          >
-            Aguardem
-          </motion.div>
+          <p className="text-sm text-gray-500 font-medium uppercase tracking-widest text-center">
+            Clique no empreendimento que deseja acompanhar
+          </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
@@ -801,8 +821,14 @@ const Progress = () => {
                 <Wrapper 
                   href={item.link} 
                   target={item.link ? "_blank" : undefined}
-                  onClick={() => item.gallery ? setActiveGallery(item.gallery) : undefined}
-                  className={`block w-full h-full ${item.link || item.gallery ? 'cursor-pointer' : ''}`}
+                  onClick={() => {
+                    if (item.gallery) {
+                      setActiveGallery(item.gallery);
+                    } else if (!item.link) {
+                      setShowAguardem(true);
+                    }
+                  }}
+                  className={`block w-full h-full cursor-pointer`}
                 >
                   <img src={item.img} alt={item.label} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" referrerPolicy="no-referrer" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-4">
@@ -843,6 +869,38 @@ const Progress = () => {
             <div className="absolute bottom-6 left-0 right-0 text-center text-white/50 text-sm">
               Deslize para ver mais
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAguardem && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setShowAguardem(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock size={32} />
+              </div>
+              <h3 className="text-2xl font-sans text-primary font-bold mb-2">Aguardem</h3>
+              <p className="text-gray-600 mb-6">Em breve teremos atualizações sobre a evolução desta obra.</p>
+              <button 
+                onClick={() => setShowAguardem(false)}
+                className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-accent transition-colors"
+              >
+                Entendi
+              </button>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
