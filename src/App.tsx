@@ -516,16 +516,16 @@ const About = () => (
         <span className="text-xs font-bold text-accent uppercase tracking-widest">Minha História</span>
         <div className="space-y-4 text-gray-600 leading-relaxed">
           <p>
-            Sou natural de Caetité – Bahia, e após passar um período no Estado do Amapá, cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam como forma de ter um extra, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.
+            Sou natural de Caetité – Bahia, e cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.
           </p>
           <p>
-            Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente.
+            Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente. 
           </p>
           <p>
             Gosto muito de desafios, de inovar, sou criativa e adoro marketing. Já atuei também na coordenação comercial, e entre inspirar e utilizar minha experiência como bússola, percebi que gosto da liberdade de estar presente e gerir meu próprio negócio ajudando os meus clientes a tomarem a decisão certa, sempre pautado em muita transparência.
           </p>
           <p>
-            Hoje, com 10 anos de profissão, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.
+            Nesses 10 anos de profissão, pude testemunhar vários exemplos de sucesso e retorno financeiros dos clientes que compraram imóveis na planta. Hoje, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.
           </p>
           <p className="font-bold text-primary pt-4">
             Paula Malheiro – CRECI 21.188
