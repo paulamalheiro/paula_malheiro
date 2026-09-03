@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #A0522D;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #F5F2ED;
+  --color-accent: #D2691E;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans;
+  }
+}

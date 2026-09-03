@@ -1,0 +1,1019 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  X, 
+  CheckCircle2, 
+  MapPin, 
+  Instagram, 
+  Menu, 
+  ArrowRight, 
+  Building2, 
+  TrendingUp, 
+  ShieldCheck, 
+  Wallet, 
+  Clock,
+  Lock,
+  Images,
+  ExternalLink,
+  Film,
+  Video,
+  Play
+} from 'lucide-react';
+import { getImageUrl } from '../../lib/supabase';
+import { useBanners } from '../../hooks/useBanners';
+import { useProperties } from '../../hooks/useProperties';
+import { SmartImage } from '../common/SmartImage';
+import { CampaignPopup } from '../common/CampaignPopup';
+import type { Property } from '../../types/property';
+
+// --- Icons ---
+const WhatsAppIcon = ({ size = 24, className = "" }: { size?: number; className?: string }) => (
+  <svg 
+    width={size} 
+    height={size} 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+);
+
+// --- Components ---
+
+const Navbar = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  return (
+    <nav className="sticky top-0 z-40 bg-[#FDFCFB]/90 backdrop-blur-md border-b border-gray-100 shadow-xs">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 h-20 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex flex-col border-r border-gray-200 pr-2 sm:pr-4 text-right">
+            <div className="text-[16px] sm:text-2xl lg:text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
+            <div className="text-[7px] sm:text-[10px] lg:text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1 sm:mt-1.5 font-medium">Corretora de Imóveis</div>
+          </div>
+          <SmartImage 
+            src="/logo.png.PNG" 
+            alt="Logo VCA" 
+            className="w-[50px] sm:w-[80px] lg:w-[110px] object-contain"
+          />
+        </div>
+        <div className="hidden xl:flex items-center justify-center gap-6 text-[13px] font-semibold text-gray-600 flex-1">
+          <a href="#home" className="hover:text-primary transition-colors whitespace-nowrap">Início</a>
+          <a href="#projects" className="hover:text-primary transition-colors whitespace-nowrap">Empreendimentos</a>
+          <a href="#simulation" className="hover:text-primary transition-colors whitespace-nowrap">Simulação</a>
+          <a href="#construction" className="hover:text-primary transition-colors whitespace-nowrap">Evolução das Obras</a>
+          <a href="#about" className="hover:text-primary transition-colors whitespace-nowrap">Sobre Mim</a>
+          <a href="#contact" className="hover:text-primary transition-colors whitespace-nowrap">Contato</a>
+        </div>
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <a 
+            href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
+            target="_blank"
+            rel="noreferrer"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white shadow-xs hover:scale-110 transition-all"
+            title="Instagram"
+          >
+            <Instagram size={16} />
+          </a>
+          <a 
+            href="https://wa.me/5577991465337"
+            target="_blank"
+            rel="noreferrer"
+            className="bg-[#25D366] text-white p-2 sm:px-5 sm:py-2.5 rounded-full text-xs font-bold hover:opacity-90 transition-all shadow-md flex items-center gap-2"
+          >
+            <WhatsAppIcon size={16} />
+            <span className="hidden sm:inline">WhatsApp</span>
+          </a>
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="xl:hidden text-gray-600 p-1 sm:p-2 cursor-pointer">
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+      
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="xl:hidden bg-white border-b border-gray-100 overflow-hidden"
+          >
+            <div className="flex flex-col px-4 py-4 space-y-4 text-sm font-semibold text-gray-600">
+              <a href="#home" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Início</a>
+              <a href="#projects" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Empreendimentos</a>
+              <a href="#simulation" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Simulação</a>
+              <a href="#construction" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Evolução das Obras</a>
+              <a href="#about" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Sobre Mim</a>
+              <a href="#contact" onClick={() => setIsMobileMenuOpen(false)} className="hover:text-primary transition-colors">Contato</a>
+              <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} className="text-primary font-bold flex items-center gap-1.5 pt-2 border-t border-gray-100">
+                <Lock size={14} /> Painel Administrativo
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </nav>
+  );
+};
+
+const Hero = () => {
+  const { getBanner } = useBanners();
+  const heroBanner = getBanner('hero');
+
+  const heroTag = heroBanner.tag || 'Especialista em Imóveis na Planta';
+  const heroSubtitle = heroBanner.subtitle || 'Com mais de 10 anos de experiência, minha intenção aqui é conectar você às oportunidades em imóveis através de um atendimento humano e personalizado para encontrarmos a melhor opção para o seu momento atual.';
+  const heroBtnText = heroBanner.button_text || 'Conheça os Empreendimentos';
+  const heroBtnLink = heroBanner.button_link || '#projects';
+  const heroImage = heroBanner.image_path || '/paula-hero.jpeg';
+
+  return (
+    <section id="home" className="relative pt-12 pb-24 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-12 items-center">
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="space-y-8"
+        >
+          <div className="space-y-4">
+            <span className="text-xs font-bold text-accent uppercase tracking-[0.3em]">{heroTag}</span>
+            <h1 className="flex flex-col">
+              <span className="text-2xl md:text-3xl font-sans text-gray-500 uppercase tracking-[0.2em] mb-2">
+                a compra do seu
+              </span>
+              <span className="text-7xl md:text-9xl font-sans font-black text-primary leading-none mb-4 tracking-tight">
+                imóvel
+              </span>
+              <span className="text-lg md:text-xl font-sans text-gray-600 leading-relaxed italic">
+                como uma experiência segura e transparente!
+              </span>
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
+            {heroSubtitle}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 items-center">
+            <a 
+              href={heroBtnLink}
+              className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-lg font-bold hover:bg-accent transition-all shadow-xl shadow-primary/20 text-center"
+            >
+              {heroBtnText}
+            </a>
+            <div className="flex gap-4 w-full sm:w-auto">
+              <a 
+                href="https://wa.me/5577991465337"
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 sm:flex-none bg-[#25D366] text-white px-8 py-4 rounded-lg font-bold hover:opacity-90 transition-all shadow-xl shadow-[#25D366]/20 text-center flex items-center justify-center gap-2"
+              >
+                <WhatsAppIcon size={20} />
+                Agendar Atendimento
+              </a>
+              <a 
+                href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
+                target="_blank"
+                rel="noreferrer"
+                className="w-14 h-14 shrink-0 rounded-lg bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-105 transition-all shadow-lg"
+                title="Instagram"
+              >
+                <Instagram size={24} />
+              </a>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.8 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="relative aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl bg-gray-100"
+        >
+          <SmartImage 
+            src={heroImage} 
+            alt="Paula Malheiro" 
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const ProjectCard = ({ project, idx }: { project: Property; idx: number; key?: React.Key }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const whatsappMessage = `Olá Paula! Gostaria de mais informações sobre o empreendimento *${project.title}* (${project.location}).`;
+
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: idx * 0.1 }}
+      onClick={() => setIsExpanded(!isExpanded)}
+      onMouseEnter={() => setIsExpanded(true)}
+      onMouseLeave={() => setIsExpanded(false)}
+      className={`group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-500 flex flex-col ${isExpanded ? 'md:col-span-2 lg:col-span-1' : ''}`}
+    >
+      <div className="relative aspect-[3/4] overflow-hidden shrink-0 bg-gray-100">
+        <SmartImage 
+          src={project.image_url} 
+          alt={project.title} 
+          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+        />
+        {project.tag && (
+          <div className="absolute top-4 left-4 bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md">
+            {project.tag}
+          </div>
+        )}
+      </div>
+
+      <div className="p-6 flex flex-col flex-1">
+        <div className="space-y-3 mb-4">
+          <h3 className="text-xl font-sans text-primary font-bold">{project.title}</h3>
+          <div className="flex items-center gap-1 text-gray-500 text-sm">
+            <MapPin size={14} className="text-primary shrink-0" /> {project.location}
+          </div>
+
+          {project.description && (
+            <div className={`text-sm text-gray-600 leading-relaxed transition-all duration-500 overflow-hidden ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-20 opacity-80'}`}>
+              <div className="whitespace-pre-line">
+                {project.description}
+              </div>
+            </div>
+          )}
+
+          {project.description && project.description.length > 100 && (
+            <button 
+              type="button"
+              className="text-xs font-bold text-primary/60 hover:text-primary transition-colors uppercase tracking-widest cursor-pointer"
+            >
+              {isExpanded ? 'Ver menos' : 'Ver mais detalhes'}
+            </button>
+          )}
+        </div>
+
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
+          <div>
+            <span className="block text-[10px] text-gray-400 uppercase font-bold">Status</span>
+            <span className="font-bold text-primary text-sm">{project.tag || 'Disponível'}</span>
+          </div>
+          <a 
+            href={`https://wa.me/5577991465337?text=${encodeURIComponent(whatsappMessage)}`}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-primary font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all hover:text-accent"
+          >
+            Saiba Mais <ArrowRight size={16} />
+          </a>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+const FeaturedProjects = () => {
+  const { featuredProperties, loading } = useProperties();
+
+  return (
+    <section id="projects" className="py-24 bg-secondary/30">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="mb-16 text-center space-y-4">
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">Portfólio Selecionado</span>
+          <h2 className="text-4xl md:text-5xl font-sans text-primary font-bold">Empreendimentos em Destaque</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Os melhores lançamentos imobiliários com alto potencial de valorização e qualidade de vida.
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-500 text-sm">Carregando empreendimentos...</p>
+          </div>
+        ) : featuredProperties.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-3xl p-8 max-w-md mx-auto border border-gray-100">
+            <p className="text-gray-600 font-bold">Nenhum empreendimento em destaque no momento.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {featuredProperties.map((project, idx) => (
+              <ProjectCard key={project.id} project={project} idx={idx} />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const Benefits = () => {
+  const { getBanner } = useBanners();
+  const investBanner = getBanner('investment');
+  const investImage = investBanner.image_path || '/velli.jpeg';
+  const investQuote = investBanner.subtitle || 'Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.';
+
+  return (
+    <section className="py-24 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-16 items-center">
+        <div className="space-y-8">
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">Por Que Investir na Planta?</span>
+          <h2 className="text-4xl md:text-5xl font-sans text-primary font-bold leading-tight">
+            Segurança, Rentabilidade e Conquista Patrimonial
+          </h2>
+          
+          <div className="space-y-6">
+            {[
+              { icon: <TrendingUp />, title: 'Alta Valorização', desc: 'Adquirir na planta permite capturar toda a curva de valorização do empreendimento até a entrega das chaves.' },
+              { icon: <ShieldCheck />, title: 'Personalização e Inovação', desc: 'Acesso às últimas tendências em automação, sustentabilidade e layouts modernos que atendem às demandas atuais.' },
+              { icon: <Wallet />, title: 'Condições Facilitadas', desc: 'Fluxos de pagamento flexíveis durante a obra, permitindo um planejamento financeiro muito mais estratégico.' }
+            ].map((item, idx) => (
+              <div key={idx} className="flex gap-6 p-6 rounded-2xl hover:bg-secondary/50 transition-colors">
+                <div className="w-14 h-14 shrink-0 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  {item.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800 mb-1">{item.title}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative bg-gray-100">
+            <SmartImage src={investImage} alt="Investimento" className="w-full h-full object-cover" />
+          </div>
+          <div className="absolute -bottom-8 -left-8 bg-white p-8 rounded-2xl shadow-xl max-w-xs border border-gray-100">
+            <p className="italic text-gray-600 text-sm mb-4">
+              &quot;{investQuote}&quot;
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary/20 relative overflow-hidden shrink-0">
+                <SmartImage src={investImage} alt="Paula Malheiro" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <span className="block font-bold text-primary text-sm leading-none">Paula Malheiro</span>
+                <span className="text-[10px] text-gray-400 uppercase font-bold mt-1">Corretora de Imóveis</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+const Simulation = () => {
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({
+    nome: '',
+    dataNascimento: '',
+    estadoCivil: 'Solteiro(a)',
+    profissao: '',
+    renda: '',
+    dependentes: 'Não',
+    possuiImoveis: 'Não',
+    ondeReside: ''
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    const message = `*Nova Simulação de Financiamento*\n\n` +
+      `*Nome:* ${formData.nome}\n` +
+      `*Data de Nascimento:* ${formData.dataNascimento}\n` +
+      `*Estado Civil:* ${formData.estadoCivil}\n` +
+      `*Profissão:* ${formData.profissao}\n` +
+      `*Renda:* ${formData.renda}\n` +
+      `*Possui dependentes:* ${formData.dependentes}\n` +
+      `*Já possui imóveis:* ${formData.possuiImoveis}\n` +
+      `*Onde reside:* ${formData.ondeReside}`;
+      
+    const whatsappUrl = `https://wa.me/5577991465337?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+    
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setShowForm(false);
+    }, 1000);
+  };
+
+  return (
+    <section id="simulation" className="py-24 bg-secondary/20">
+      <div className="max-w-4xl mx-auto px-4 text-center space-y-12">
+        <div className="space-y-4">
+          <h2 className="text-4xl font-sans text-primary font-bold">Simulação de Financiamento</h2>
+          <p className="text-gray-600">Descubra as melhores condições para o seu perfil financeiro.</p>
+        </div>
+        
+        <AnimatePresence mode="wait">
+          {!showForm ? (
+            <motion.div
+              key="button"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex justify-center"
+            >
+              <button 
+                onClick={() => setShowForm(true)}
+                className="group relative bg-primary text-white px-12 py-6 rounded-2xl font-bold text-xl shadow-2xl shadow-primary/30 hover:scale-105 transition-all flex items-center justify-center overflow-hidden cursor-pointer"
+              >
+                <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                <span>Simular</span>
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="form"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl border border-gray-100 text-left max-w-2xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <h3 className="text-2xl font-sans text-primary font-bold">Dados para Simulação</h3>
+                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
+                  <input 
+                    required
+                    type="text" 
+                    placeholder="Seu nome completo" 
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    value={formData.nome}
+                    onChange={(e) => setFormData({...formData, nome: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Data de Nascimento</label>
+                  <input 
+                    required
+                    type="date" 
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    value={formData.dataNascimento}
+                    onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Estado Civil</label>
+                  <select 
+                    required
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all bg-white"
+                    value={formData.estadoCivil}
+                    onChange={(e) => setFormData({...formData, estadoCivil: e.target.value})}
+                  >
+                    <option value="Solteiro(a)">Solteiro(a)</option>
+                    <option value="Casado(a)">Casado(a)</option>
+                    <option value="Divorciado(a)">Divorciado(a)</option>
+                    <option value="Viúvo(a)">Viúvo(a)</option>
+                    <option value="União Estável">União Estável</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Profissão</label>
+                  <input 
+                    required
+                    type="text" 
+                    placeholder="Sua profissão" 
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    value={formData.profissao}
+                    onChange={(e) => setFormData({...formData, profissao: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Renda R$</label>
+                  <input 
+                    required
+                    type="text" 
+                    placeholder="Ex: 5.000,00" 
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    value={formData.renda}
+                    onChange={(e) => setFormData({...formData, renda: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Possui dependentes?</label>
+                  <div className="flex gap-4 p-1 bg-secondary/30 rounded-xl">
+                    {['Sim', 'Não'].map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setFormData({...formData, dependentes: opt})}
+                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-all cursor-pointer ${formData.dependentes === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Já possui Imóveis?</label>
+                  <div className="flex gap-4 p-1 bg-secondary/30 rounded-xl">
+                    {['Sim', 'Não'].map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setFormData({...formData, possuiImoveis: opt})}
+                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-all cursor-pointer ${formData.possuiImoveis === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-gray-700 ml-1">Onde Reside</label>
+                  <input 
+                    required
+                    type="text" 
+                    placeholder="Cidade / Estado" 
+                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    value={formData.ondeReside}
+                    onChange={(e) => setFormData({...formData, ondeReside: e.target.value})}
+                  />
+                </div>
+
+                <div className="md:col-span-2 pt-4">
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full bg-primary text-white py-5 rounded-xl font-bold text-lg hover:bg-accent transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        Simular
+                      </div>
+                    )}
+                  </button>
+                  <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-widest">
+                    Seus dados estão protegidos e serão usados apenas para a simulação.
+                  </p>
+                </div>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </section>
+  );
+};
+
+const About = () => {
+  const { getBanner } = useBanners();
+  const aboutBanner = getBanner('about');
+  const aboutImage = aboutBanner.image_path || '/paula-perfil.jpeg';
+
+  return (
+    <section id="about" className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-16 items-start">
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="rounded-3xl overflow-hidden shadow-2xl bg-gray-100"
+        >
+          <SmartImage 
+            src={aboutImage} 
+            alt="Paula Malheiro" 
+            className="w-full h-auto object-cover"
+          />
+        </motion.div>
+        <motion.div 
+          initial={{ opacity: 0, x: 50 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          className="space-y-6"
+        >
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">Minha História</span>
+          <div className="space-y-4 text-gray-600 leading-relaxed">
+            <p>
+              Sou natural de Caetité – Bahia, e cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.
+            </p>
+            <p>
+              Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente. 
+            </p>
+            <p>
+              Gosto muito de desafios, de inovar, sou criativa e adoro marketing. Já atuei também na coordenação comercial, e entre inspirar e utilizar minha experiência como bússola, percebi que gosto da liberdade de estar presente e gerir meu próprio negócio ajudando os meus clientes a tomarem a decisão certa, sempre pautado em muita transparência.
+            </p>
+            <p>
+              Nesses 10 anos de profissão, pude testemunhar vários exemplos de sucesso e retorno financeiros dos clientes que compraram imóveis na planta. Hoje, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.
+            </p>
+            <p className="font-bold text-primary pt-4">
+              Paula Malheiro – CRECI 21.188
+            </p>
+          </div>
+          <div className="pt-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><CheckCircle2 size={20} /></div>
+              <span className="font-bold text-gray-700">Segurança e Planejamento</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary"><CheckCircle2 size={20} /></div>
+              <span className="font-bold text-gray-700">Atendimento Personalizado</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+};
+
+const Progress = () => {
+  const { constructionProperties, loading } = useProperties();
+  const [activeGallery, setActiveGallery] = useState<string[] | null>(null);
+  const [activeVideos, setActiveVideos] = useState<string[] | null>(null);
+  const [selectedVideoIdx, setSelectedVideoIdx] = useState<number>(0);
+  const [showAguardem, setShowAguardem] = useState(false);
+  const [selectedPropTitle, setSelectedPropTitle] = useState<string>('');
+
+  const handlePropertyClick = (prop: Property) => {
+    // 1. Se for formato de vídeo e tiver vídeos cadastrados
+    if (prop.media_type === 'videos' && prop.gallery_videos && prop.gallery_videos.length > 0) {
+      setActiveVideos(prop.gallery_videos);
+      setSelectedVideoIdx(0);
+      setSelectedPropTitle(prop.title);
+      return;
+    }
+
+    // 2. Ação externa do Instagram
+    if (prop.action_type === 'instagram' && prop.action_url) {
+      window.open(prop.action_url, '_blank', 'noreferrer');
+      return;
+    }
+
+    // 3. Galeria de Fotos
+    if ((prop.action_type === 'gallery' || prop.media_type === 'photos') && prop.gallery_images && prop.gallery_images.length > 0) {
+      setActiveGallery(prop.gallery_images);
+      setSelectedPropTitle(prop.title);
+      return;
+    }
+
+    // 4. Modal "Aguardem" padrão
+    setSelectedPropTitle(prop.title);
+    setShowAguardem(true);
+  };
+
+  return (
+    <section id="construction" className="py-24 bg-white relative">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="mb-16 text-center">
+          <h2 className="text-4xl font-sans text-primary font-bold mb-4">Evolução das Obras</h2>
+          <p className="text-gray-600">Confira o acompanhamento real de cada etapa dos nossos empreendimentos.</p>
+        </div>
+
+        <div className="flex justify-center mb-12">
+          <p className="text-sm text-gray-500 font-medium uppercase tracking-widest text-center">
+            Clique no empreendimento que deseja acompanhar
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3" />
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            {constructionProperties.map((prop, idx) => {
+              const isVideo = prop.media_type === 'videos' && Boolean(prop.gallery_videos && prop.gallery_videos.length > 0);
+
+              return (
+                <motion.div 
+                  key={prop.id || idx}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05 }}
+                  onClick={() => handlePropertyClick(prop)}
+                  className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-md cursor-pointer bg-gray-100 border border-gray-100 hover:shadow-xl transition-all"
+                >
+                  <SmartImage 
+                    src={prop.image_url} 
+                    alt={prop.title} 
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                  />
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-95 transition-opacity flex flex-col justify-end p-3.5">
+                    <span className="text-white font-bold text-xs leading-tight line-clamp-2">{prop.title}</span>
+                    <div className="flex items-center gap-1 text-[10px] text-amber-300 font-medium mt-1">
+                      {isVideo ? (
+                        <><Film size={10} /> Vídeos ({prop.gallery_videos?.length})</>
+                      ) : prop.action_type === 'instagram' ? (
+                        <><Instagram size={10} /> Reels</>
+                      ) : prop.action_type === 'gallery' ? (
+                        <><Images size={10} /> Fotos ({prop.gallery_images?.length})</>
+                      ) : (
+                        <><Clock size={10} /> Obras</>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Vídeos da Obra */}
+      <AnimatePresence>
+        {activeVideos && activeVideos.length > 0 && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[115] bg-black/95 flex flex-col items-center justify-center p-4"
+          >
+            <div className="w-full max-w-4xl flex items-center justify-between text-white pb-3 border-b border-gray-800">
+              <div className="flex items-center gap-2">
+                <Film size={20} className="text-amber-400" />
+                <span className="text-base sm:text-lg font-bold">
+                  {selectedPropTitle} • Vídeos de Acompanhamento
+                </span>
+              </div>
+              <button 
+                onClick={() => setActiveVideos(null)}
+                className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition-colors cursor-pointer"
+                title="Fechar"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Alternador de Vídeo (se houver 2 vídeos) */}
+            {activeVideos.length > 1 && (
+              <div className="flex gap-2 my-3">
+                {activeVideos.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedVideoIdx(i)}
+                    className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                      selectedVideoIdx === i 
+                        ? 'bg-amber-400 text-black shadow-md' 
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    Vídeo {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Player de Vídeo */}
+            <div className="w-full max-w-4xl aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center shadow-2xl mt-2 border border-gray-800">
+              {activeVideos[selectedVideoIdx]?.includes('.mp4') || activeVideos[selectedVideoIdx]?.includes('.webm') || activeVideos[selectedVideoIdx]?.startsWith('blob:') ? (
+                <video 
+                  key={activeVideos[selectedVideoIdx]}
+                  src={activeVideos[selectedVideoIdx]} 
+                  controls 
+                  autoPlay 
+                  playsInline 
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="p-8 text-center text-white space-y-4">
+                  <Play size={48} className="mx-auto text-primary" />
+                  <p className="text-sm font-bold">Vídeo externo disponível:</p>
+                  <a 
+                    href={activeVideos[selectedVideoIdx]} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 bg-primary hover:bg-accent text-white px-6 py-3 rounded-xl font-bold text-xs shadow-lg transition-all"
+                  >
+                    Assistir no Navegador <ExternalLink size={14} />
+                  </a>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Galeria de Fotos */}
+      <AnimatePresence>
+        {activeGallery && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/95 flex flex-col items-center justify-center p-4"
+          >
+            <div className="w-full max-w-5xl flex items-center justify-between text-white pb-4">
+              <span className="text-lg font-bold">{selectedPropTitle} • Galeria de Obras</span>
+              <button 
+                onClick={() => setActiveGallery(null)}
+                className="text-white/70 hover:text-white transition-colors cursor-pointer"
+              >
+                <X size={32} />
+              </button>
+            </div>
+            
+            <div className="w-full max-w-5xl overflow-x-auto flex gap-6 snap-x snap-mandatory pb-4 scrollbar-hide">
+              {activeGallery.map((img, i) => (
+                <SmartImage 
+                  key={i} 
+                  src={img} 
+                  alt={`Galeria ${i}`} 
+                  className="w-full max-h-[75vh] object-contain snap-center shrink-0 rounded-2xl bg-black/50"
+                />
+              ))}
+            </div>
+            <div className="text-center text-white/50 text-xs mt-2">
+              Deslize lateralmente para ver mais fotos
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Aguardem */}
+      <AnimatePresence>
+        {showAguardem && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs"
+            onClick={() => setShowAguardem(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full text-center"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="w-16 h-16 bg-accent/10 text-accent rounded-full flex items-center justify-center mx-auto mb-4">
+                <Clock size={32} />
+              </div>
+              <h3 className="text-2xl font-sans text-primary font-bold mb-2">Aguardem</h3>
+              <p className="text-gray-600 mb-6 text-sm">
+                Em breve teremos atualizações fotográficas sobre a evolução das obras do empreendimento <strong>{selectedPropTitle}</strong>.
+              </p>
+              <button 
+                onClick={() => setShowAguardem(false)}
+                className="w-full bg-primary text-white py-3 rounded-xl font-bold hover:bg-accent transition-colors cursor-pointer"
+              >
+                Entendi
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+};
+
+const CTA = () => (
+  <section className="py-24 px-4">
+    <div className="max-w-5xl mx-auto bg-primary rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl shadow-primary/30">
+      <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <Building2 className="absolute -top-10 -left-10 w-64 h-64" />
+        <Building2 className="absolute -bottom-10 -right-10 w-64 h-64" />
+      </div>
+      
+      <div className="relative z-10 space-y-8">
+        <h2 className="text-4xl md:text-6xl font-sans leading-tight">
+          Não encontrou o que procura?
+        </h2>
+        <p className="text-lg text-white/80 max-w-xl mx-auto">
+          Estou pronta para apresentar as melhores oportunidades em imóveis para você.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          <a 
+            href="https://wa.me/5577991465337" 
+            target="_blank"
+            rel="noreferrer"
+            className="bg-[#25D366] text-white px-10 py-5 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-xl inline-flex items-center gap-3"
+          >
+            <WhatsAppIcon size={24} />
+            Chame aqui
+          </a>
+          <a 
+            href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
+            target="_blank"
+            rel="noreferrer"
+            className="w-16 h-16 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-110 transition-transform shadow-xl"
+            title="Instagram"
+          >
+            <Instagram size={32} />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+);
+
+const Footer = () => (
+  <footer id="contact" className="bg-secondary/50 pt-24 pb-12 border-t border-gray-100">
+    <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12 mb-16">
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4">
+          <div className="text-2xl font-sans text-primary font-bold leading-none tracking-tight">Paula Malheiro</div>
+          <SmartImage 
+            src="/logo.png.PNG" 
+            alt="Logo VCA" 
+            className="w-36 h-12 object-contain"
+          />
+          <div className="text-[12px] text-gray-500 uppercase tracking-[0.2em] font-medium">Corretora de Imóveis</div>
+        </div>
+        <p className="text-sm text-gray-500 leading-relaxed">
+          Especialista em lançamentos. Ética e transparência para o seu próximo imóvel na planta.
+        </p>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-primary mb-6">Navegação Rápida</h4>
+        <ul className="space-y-3 text-sm text-gray-600">
+          <li><a href="#home" className="hover:text-primary transition-colors">Início</a></li>
+          <li><a href="#projects" className="hover:text-primary transition-colors">Empreendimentos</a></li>
+          <li><a href="#simulation" className="hover:text-primary transition-colors">Simulação</a></li>
+          <li><a href="#construction" className="hover:text-primary transition-colors">Evolução das Obras</a></li>
+          <li><a href="#about" className="hover:text-primary transition-colors">Sobre Mim</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 className="font-bold text-primary mb-6">Contato</h4>
+        <ul className="space-y-3 text-sm text-gray-600">
+          <li>Vitória da Conquista - BA</li>
+          <li>CRECI: 21.188</li>
+          <li>WhatsApp: (77) 99146-5337</li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h4 className="font-bold text-primary mb-6">Área Restrita</h4>
+        <p className="text-xs text-gray-500 leading-relaxed">
+          Acesso ao painel administrativo para gestão de banners, empreendimentos e campanhas.
+        </p>
+        <Link 
+          to="/admin" 
+          className="inline-flex items-center gap-2 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/20 px-4 py-2.5 rounded-xl transition-all"
+        >
+          <Lock size={14} /> Painel Administrativo
+        </Link>
+      </div>
+    </div>
+
+    <div className="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
+      <div>Paula Malheiro &copy; {new Date().getFullYear()} • Todos os direitos reservados.</div>
+      <div>Vitória da Conquista – Bahia</div>
+    </div>
+
+    <a 
+      href="https://wa.me/5577991465337" 
+      target="_blank" 
+      rel="noreferrer"
+      className="fixed bottom-8 right-8 w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform z-50"
+    >
+      <WhatsAppIcon size={32} />
+    </a>
+  </footer>
+);
+
+export const LandingPage: React.FC = () => {
+  return (
+    <main className="min-h-screen relative">
+      {/* Pop-up de Campanha Promocional */}
+      <CampaignPopup />
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      >
+        <Navbar />
+        <Hero />
+        <FeaturedProjects />
+        <Simulation />
+        <Benefits />
+        <Progress />
+        <About />
+        <CTA />
+        <Footer />
+      </motion.div>
+    </main>
+  );
+};
