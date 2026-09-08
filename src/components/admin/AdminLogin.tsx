@@ -73,8 +73,8 @@ export const AdminLogin: React.FC = () => {
           <div className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs leading-relaxed flex items-start gap-3">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
             <div>
-              <strong className="font-semibold block mb-1">Aviso de Configuração Supabase:</strong>
-              As variáveis de ambiente <code>VITE_SUPABASE_URL</code> e <code>VITE_SUPABASE_ANON_KEY</code> precisam ser configuradas no arquivo <code>.env</code> com os dados do seu Supabase no Coolify / Hostinger.
+              <strong className="font-semibold block mb-1">Aviso de Configuração PocketBase:</strong>
+              A variável de ambiente <code>VITE_POCKETBASE_URL</code> precisa ser configurada no arquivo <code>.env</code> com a URL do seu PocketBase no Coolify.
             </div>
           </div>
         )}

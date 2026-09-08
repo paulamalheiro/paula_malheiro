@@ -1,6 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session, AuthError } from '@supabase/supabase-js';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { pb, isPocketBaseConfigured } from '../lib/pocketbase';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+}
 
 // Credenciais de teste / desenvolvimento local
 export const LOCAL_DEV_CREDENTIALS = {
@@ -11,20 +17,20 @@ export const LOCAL_DEV_CREDENTIALS = {
 const LOCAL_SESSION_KEY = 'paula_admin_local_session';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
+  session: any | null;
   loading: boolean;
   isConfigured: boolean;
   isLocalDev: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | Error | null }>;
+  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [isLocalDev, setIsLocalDev] = useState(false);
 
@@ -33,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const savedLocalSession = localStorage.getItem(LOCAL_SESSION_KEY);
     if (savedLocalSession) {
       try {
-        const mockUser = JSON.parse(savedLocalSession) as User;
+        const mockUser = JSON.parse(savedLocalSession) as AuthUser;
         setUser(mockUser);
         setIsLocalDev(true);
         setLoading(false);
@@ -43,32 +49,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    // 2. Se o Supabase estiver configurado, checar sessão remota
-    if (supabase) {
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }).catch((err) => {
-        console.error('[Auth] Erro ao recuperar sessão remota:', err);
-        setLoading(false);
+    // 2. Checar se já existe sessão salva no PocketBase
+    if (isPocketBaseConfigured && pb.authStore.isValid && pb.authStore.record) {
+      const rec = pb.authStore.record;
+      setUser({
+        id: rec.id,
+        email: rec.email || '',
+        name: rec.name || 'Administrador',
+        role: rec.role || 'admin',
       });
-
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    } else {
-      setLoading(false);
+      setSession({ token: pb.authStore.token });
+      setIsLocalDev(false);
     }
+
+    // Ouvinte para alterações de autenticação no PocketBase
+    const unsubscribe = pb.authStore.onChange((token, model) => {
+      if (token && model) {
+        setUser({
+          id: model.id,
+          email: model.email || '',
+          name: model.name || 'Administrador',
+          role: model.role || 'admin',
+        });
+        setSession({ token });
+        setIsLocalDev(false);
+      } else if (!localStorage.getItem(LOCAL_SESSION_KEY)) {
+        setUser(null);
+        setSession(null);
+      }
+    });
+
+    setLoading(false);
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
     const cleanEmail = email.trim().toLowerCase();
 
     // 1. Suporte às credenciais locais de teste/desenvolvimento
@@ -76,14 +94,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cleanEmail === LOCAL_DEV_CREDENTIALS.email.toLowerCase() &&
       password === LOCAL_DEV_CREDENTIALS.password
     ) {
-      const mockUser = {
+      const mockUser: AuthUser = {
         id: 'local-admin-paula',
-        app_metadata: { provider: 'email' },
-        user_metadata: { name: 'Paula Malheiro (Admin Local)' },
-        aud: 'authenticated',
         email: LOCAL_DEV_CREDENTIALS.email,
-        created_at: new Date().toISOString(),
-      } as unknown as User;
+        name: 'Paula Malheiro (Admin Local)',
+        role: 'admin',
+      };
 
       localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(mockUser));
       setUser(mockUser);
@@ -91,39 +107,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { error: null };
     }
 
-    // 2. Autenticação via Supabase oficial se estiver configurado
-    if (supabase) {
+    // 2. Autenticação via PocketBase
+    if (isPocketBaseConfigured) {
+      // Tentativa A: Coleção 'users' comum
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
-
-        if (error) {
-          return { error };
+        const authData = await pb.collection('users').authWithPassword(cleanEmail, password);
+        if (authData?.record) {
+          const authenticatedUser: AuthUser = {
+            id: authData.record.id,
+            email: authData.record.email || cleanEmail,
+            name: authData.record.name || 'Administrador',
+            role: 'admin',
+          };
+          setUser(authenticatedUser);
+          setSession({ token: authData.token });
+          setIsLocalDev(false);
+          return { error: null };
         }
-
-        setSession(data.session);
-        setUser(data.user);
-        setIsLocalDev(false);
-        return { error: null };
-      } catch (err) {
-        return { error: err as Error };
+      } catch (errUsers: any) {
+        // Se não foi encontrado em 'users', tenta autenticar como _superusers (v0.23+)
       }
+
+      // Tentativa B: Superusuário PocketBase v0.23+ (_superusers)
+      try {
+        const superRes = await pb.collection('_superusers').authWithPassword(cleanEmail, password);
+        if (superRes?.record) {
+          const superUser: AuthUser = {
+            id: superRes.record.id,
+            email: superRes.record.email || cleanEmail,
+            name: 'Superuser PocketBase',
+            role: 'superuser',
+          };
+          setUser(superUser);
+          setSession({ token: superRes.token });
+          setIsLocalDev(false);
+          return { error: null };
+        }
+      } catch (errSuper: any) {
+        // Tenta endpoint legado de admins
+        try {
+          const adminRes: any = await pb.admins.authWithPassword(cleanEmail, password);
+          const adminObj = adminRes?.record || adminRes?.admin;
+          if (adminObj) {
+            const adminUser: AuthUser = {
+              id: adminObj.id,
+              email: adminObj.email || cleanEmail,
+              name: 'Admin PocketBase',
+              role: 'superuser',
+            };
+            setUser(adminUser);
+            setSession({ token: adminRes.token });
+            setIsLocalDev(false);
+            return { error: null };
+          }
+        } catch (errAdmin: any) {
+          // Ambos falharam
+        }
+      }
+
+      return {
+        error: new Error('Credenciais inválidas. Verifique seu e-mail e senha no PocketBase.'),
+      };
     }
 
-    // Se não bateu com as credenciais de teste e nem há Supabase
     return {
       error: new Error(
-        `Credenciais inválidas. Para teste local, use: ${LOCAL_DEV_CREDENTIALS.email} / ${LOCAL_DEV_CREDENTIALS.password}`
+        `PocketBase não configurado. Para teste local, use: ${LOCAL_DEV_CREDENTIALS.email} / ${LOCAL_DEV_CREDENTIALS.password}`
       ),
     };
   };
 
   const signOut = async () => {
     localStorage.removeItem(LOCAL_SESSION_KEY);
-    if (supabase) {
-      await supabase.auth.signOut();
+    if (isPocketBaseConfigured) {
+      pb.authStore.clear();
     }
     setSession(null);
     setUser(null);
@@ -136,7 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         user,
         session,
         loading,
-        isConfigured: isSupabaseConfigured,
+        isConfigured: isPocketBaseConfigured,
         isLocalDev,
         signIn,
         signOut,
