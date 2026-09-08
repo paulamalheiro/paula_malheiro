@@ -389,6 +389,23 @@ export const AdminDashboard: React.FC = () => {
                         recommendedResolution={currentSectionMeta.recommendedResolution}
                       />
 
+                      {selectedFile && (
+                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+                          <div className="flex items-center gap-2 text-amber-800 text-xs font-semibold">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+                            <span>Nova imagem selecionada ({selectedFile.name}). Clique para aplicar ao site:</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleSaveBanner}
+                            disabled={isSaving}
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                          >
+                            {isSaving ? 'Salvando...' : 'Salvar Imagem Agora'}
+                          </button>
+                        </div>
+                      )}
+
                       {currentSectionMeta.hasTextConfig && (
                         <div className="space-y-4 pt-4 border-t border-gray-100">
                           <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">

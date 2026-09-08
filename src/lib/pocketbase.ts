@@ -49,6 +49,7 @@ export const getImageUrl = (imagePath?: string | null): string => {
    ============================================================================== */
 
 export const fetchBannersFromDb = async (): Promise<Banner[]> => {
+  let pbBanners: Banner[] = [];
   if (isPocketBaseConfigured) {
     try {
       const records = await pb.collection('banners').getFullList({
@@ -57,7 +58,7 @@ export const fetchBannersFromDb = async (): Promise<Banner[]> => {
       });
 
       if (records && records.length > 0) {
-        return records.map((r) => ({
+        pbBanners = records.map((r) => ({
           id: r.id,
           section: r.section,
           title: r.title || null,
@@ -76,17 +77,25 @@ export const fetchBannersFromDb = async (): Promise<Banner[]> => {
     }
   }
 
-  // Fallback para LocalStorage se o PocketBase estiver offline
+  // Se houver dados salvos no LocalStorage (como edições recentes do admin neste navegador), mescla
   try {
-    const localData = localStorage.getItem(LOCAL_STORAGE_BANNERS_KEY);
+    const localData = typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_BANNERS_KEY) : null;
     if (localData) {
-      return JSON.parse(localData) as Banner[];
+      const localList = JSON.parse(localData) as Banner[];
+      if (localList.length > 0) {
+        if (pbBanners.length === 0) return localList;
+        // Mescla garantindo que alterações locais tenham prioridade na visualização imediata
+        return pbBanners.map((pbItem) => {
+          const localMatch = localList.find((l) => l.section === pbItem.section);
+          return localMatch ? { ...pbItem, ...localMatch } : pbItem;
+        });
+      }
     }
   } catch (e) {
     console.error('Erro ao ler banners locais:', e);
   }
 
-  return [];
+  return pbBanners;
 };
 
 export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
@@ -100,6 +109,8 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
     button_link: banner.button_link,
     active: banner.active ?? true,
   };
+
+  let savedRecord: Banner | null = null;
 
   if (isPocketBaseConfigured) {
     try {
@@ -124,7 +135,7 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
         record = await pb.collection('banners').create(payload);
       }
 
-      return {
+      savedRecord = {
         id: record.id,
         ...payload,
         created_at: record.created,
@@ -135,11 +146,11 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
     }
   }
 
-  // Fallback Local Storage
+  // Sempre sincroniza com LocalStorage para visualização imediata com zero latência
   try {
     const currentList = await fetchBannersFromDb();
     const existingIndex = currentList.findIndex((b) => b.section === banner.section);
-    const fullBanner: Banner = { id: banner.id || `local-${Date.now()}`, ...payload };
+    const fullBanner: Banner = savedRecord || { id: banner.id || `local-${Date.now()}`, ...payload };
 
     if (existingIndex >= 0) {
       currentList[existingIndex] = fullBanner;
@@ -148,9 +159,24 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
     }
 
     localStorage.setItem(LOCAL_STORAGE_BANNERS_KEY, JSON.stringify(currentList));
+
+    // Notifica em tempo real a landing page e qualquer componente aberto
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('paula_banners_updated'));
+      window.dispatchEvent(new Event('storage'));
+    }
+
     return fullBanner;
   } catch (e: any) {
-    throw new Error(`Erro ao salvar localmente: ${e?.message}`);
+    console.warn('Erro ao salvar localmente:', e?.message);
+    if (savedRecord) {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('paula_banners_updated'));
+        window.dispatchEvent(new Event('storage'));
+      }
+      return savedRecord;
+    }
+    throw new Error(`Erro ao salvar banner: ${e?.message}`);
   }
 };
 
@@ -424,6 +450,53 @@ export const deleteCampaignFromDb = async (id: string): Promise<void> => {
   localStorage.setItem(LOCAL_STORAGE_CAMPAIGNS_KEY, JSON.stringify(filtered));
 };
 
+/**
+ * Otimiza e comprime imagens via Canvas no navegador antes do upload ou gravação.
+ * Reduz arquivos pesados (ex: fotos de 5MB) para ~150KB ultra-nítidos,
+ * garantindo compatibilidade total e carregamento instantâneo.
+ */
+export const compressImageFile = (
+  file: File,
+  maxWidth = 1200,
+  maxHeight = 1500,
+  quality = 0.85
+): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!file.type.startsWith('image/')) {
+      return reject(new Error('Arquivo não é uma imagem.'));
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return resolve(e.target?.result as string);
+
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = () => resolve(e.target?.result as string);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 /* ==============================================================================
    UPLOAD DE ARQUIVOS (STORAGE / POCKETBASE UPLOADS)
    ============================================================================== */
@@ -433,12 +506,13 @@ export const uploadBannerFile = async (
   _prefix = 'banners'
 ): Promise<{ path: string; publicUrl: string }> => {
   // 1. Tentar upload nativo no PocketBase na coleção 'uploads'
-  if (isPocketBaseConfigured && pb.authStore.isValid) {
+  if (isPocketBaseConfigured) {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('title', `${_prefix}-${Date.now()}`);
 
-      const record = await pb.collection('uploads').create(formData);
+      const record = await pb.collection('uploads').create(formData, { requestKey: null });
       const publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
 
       return {
@@ -446,11 +520,11 @@ export const uploadBannerFile = async (
         publicUrl,
       };
     } catch (error: any) {
-      console.warn('[PocketBase] Upload no PocketBase falhou, usando fallback:', error?.message);
+      console.warn('[PocketBase] Upload remoto falhou ou offline, usando compressão local:', error?.message);
     }
   }
 
-  // 2. Modo Local de Testes: Converte arquivo para Blob URL (vídeo) ou Base64 (imagem)
+  // 2. Modo Vídeo
   if (file.type.startsWith('video/')) {
     const blobUrl = URL.createObjectURL(file);
     return {
@@ -459,16 +533,25 @@ export const uploadBannerFile = async (
     };
   }
 
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const base64Url = reader.result as string;
-      resolve({
-        path: base64Url,
-        publicUrl: base64Url,
-      });
+  // 3. Modo Imagem: Comprime a imagem antes de salvar
+  try {
+    const compressedBase64 = await compressImageFile(file);
+    return {
+      path: compressedBase64,
+      publicUrl: compressedBase64,
     };
-    reader.onerror = () => reject(new Error('Erro ao processar arquivo para teste local.'));
-    reader.readAsDataURL(file);
-  });
+  } catch (err) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64Url = reader.result as string;
+        resolve({
+          path: base64Url,
+          publicUrl: base64Url,
+        });
+      };
+      reader.onerror = () => reject(new Error('Erro ao processar arquivo.'));
+      reader.readAsDataURL(file);
+    });
+  }
 };

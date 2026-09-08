@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Banner } from '../types/banner';
 import { fetchBannersFromDb, getImageUrl } from '../lib/supabase';
 
-// Fallbacks padrão caso o Supabase não esteja preenchido ou ocorra falha de rede
+// Fallbacks padrão caso o PocketBase não esteja preenchido ou ocorra falha de rede
 export const DEFAULT_BANNERS: Record<string, Banner> = {
   hero: {
     section: 'hero',
@@ -27,7 +27,7 @@ export const DEFAULT_BANNERS: Record<string, Banner> = {
     title: 'Paula Malheiro',
     subtitle: 'Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.',
     tag: 'Investimento',
-    image_path: '/velli.jpeg',
+    image_path: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80',
     active: true,
   },
 };
@@ -46,7 +46,7 @@ export const useBanners = () => {
         setBanners(data);
       }
     } catch (err: any) {
-      console.warn('[useBanners] Falha ao carregar banners do Supabase, usando fallbacks:', err?.message);
+      console.warn('[useBanners] Falha ao carregar banners, usando fallbacks:', err?.message);
       setError(err?.message || 'Erro ao carregar banners');
     } finally {
       setLoading(false);
@@ -55,6 +55,19 @@ export const useBanners = () => {
 
   useEffect(() => {
     loadBanners();
+
+    // Sincronização em tempo real entre abas e após salvar no admin
+    const handleUpdate = () => {
+      loadBanners();
+    };
+
+    window.addEventListener('storage', handleUpdate);
+    window.addEventListener('paula_banners_updated', handleUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleUpdate);
+      window.removeEventListener('paula_banners_updated', handleUpdate);
+    };
   }, [loadBanners]);
 
   /**
