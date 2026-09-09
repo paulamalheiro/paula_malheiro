@@ -147,29 +147,6 @@ export const AdminLogin: React.FC = () => {
               </button>
             </div>
           </form>
-
-          {/* Atalho para Teste Local */}
-          <div className="mt-6 pt-6 border-t border-gray-100">
-            <div className="bg-secondary/60 rounded-2xl p-4 text-xs space-y-2 border border-gray-200/60">
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-gray-700">⚡ Acesso de Teste Local:</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEmail('admin@paulamalheiro.com.br');
-                    setPassword('admin123');
-                  }}
-                  className="font-bold text-primary hover:text-accent underline transition-colors cursor-pointer"
-                >
-                  Preencher
-                </button>
-              </div>
-              <div className="text-gray-500 font-mono text-[11px] space-y-0.5">
-                <div>E-mail: <strong>admin@paulamalheiro.com.br</strong></div>
-                <div>Senha: <strong>admin123</strong></div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="mt-8 text-center text-xs text-gray-400">

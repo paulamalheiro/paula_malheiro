@@ -18,7 +18,7 @@ import {
 import { useCampaigns } from '../../hooks/useCampaigns';
 import { ImageUploader } from './ImageUploader';
 import { SmartImage } from '../common/SmartImage';
-import { uploadBannerFile } from '../../lib/supabase';
+import { uploadBannerFile, logAuditEvent } from '../../lib/supabase';
 import type { Campaign, CampaignMediaType } from '../../types/property';
 
 const MAX_VIDEO_DURATION_SECONDS = 40;
@@ -64,13 +64,18 @@ export const CampaignsManager: React.FC = () => {
 
   const handleToggleActive = async (camp: Campaign) => {
     try {
+      const nextActive = !camp.is_active;
       await saveCampaign({
         ...camp,
-        is_active: !camp.is_active,
+        is_active: nextActive,
       });
+      await logAuditEvent(
+        'Alteração de Campanha',
+        `Campanha "${camp.title}" foi ${nextActive ? 'ativada' : 'desativada'}.`
+      );
       setFeedback({
         type: 'success',
-        message: !camp.is_active 
+        message: nextActive 
           ? `Campanha "${camp.title}" ativada! Ela será exibida no pop-up da Landing Page.` 
           : `Campanha "${camp.title}" desativada.`,
       });
@@ -83,6 +88,7 @@ export const CampaignsManager: React.FC = () => {
     if (window.confirm(`Deseja realmente excluir a campanha "${title}"?`)) {
       try {
         await deleteCampaign(id);
+        await logAuditEvent('Exclusão de Campanha', `Campanha "${title}" foi excluída.`);
         setFeedback({ type: 'success', message: 'Campanha excluída com sucesso.' });
       } catch (err: any) {
         setFeedback({ type: 'error', message: err.message || 'Erro ao excluir campanha.' });
@@ -198,6 +204,8 @@ export const CampaignsManager: React.FC = () => {
         }
       }
 
+      const isNew = !editingCampaign.id || editingCampaign.id.startsWith('camp-') || editingCampaign.id.startsWith('local-');
+
       const payload: Partial<Campaign> = {
         ...editingCampaign,
         media_type: currentMediaType,
@@ -207,6 +215,10 @@ export const CampaignsManager: React.FC = () => {
       };
 
       await saveCampaign(payload);
+      await logAuditEvent(
+        isNew ? 'Criação de Campanha' : 'Edição de Campanha',
+        `Campanha "${payload.title}" ${isNew ? 'criada' : 'atualizada'} com sucesso.`
+      );
 
       setFeedback({
         type: 'success',

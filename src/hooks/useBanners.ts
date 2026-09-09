@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Banner } from '../types/banner';
-import { fetchBannersFromDb, getImageUrl } from '../lib/supabase';
+import { fetchBannersFromDb, getImageUrl, pb, isPocketBaseConfigured } from '../lib/supabase';
 
-// Fallbacks padrão caso o PocketBase não esteja preenchido ou ocorra falha de rede
+// Fallbacks padrão caso o PocketBase ainda não possua banners salvos
 export const DEFAULT_BANNERS: Record<string, Banner> = {
   hero: {
     section: 'hero',
@@ -42,11 +42,11 @@ export const useBanners = () => {
       setLoading(true);
       setError(null);
       const data = await fetchBannersFromDb();
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setBanners(data);
       }
     } catch (err: any) {
-      console.warn('[useBanners] Falha ao carregar banners, usando fallbacks:', err?.message);
+      console.warn('[useBanners] Falha ao carregar banners:', err?.message);
       setError(err?.message || 'Erro ao carregar banners');
     } finally {
       setLoading(false);
@@ -56,17 +56,43 @@ export const useBanners = () => {
   useEffect(() => {
     loadBanners();
 
-    // Sincronização em tempo real entre abas e após salvar no admin
-    const handleUpdate = () => {
+    // 1. Ouvintes de eventos locais e foco de janela
+    const handleRevalidate = () => {
       loadBanners();
     };
 
-    window.addEventListener('storage', handleUpdate);
-    window.addEventListener('paula_banners_updated', handleUpdate);
+    window.addEventListener('focus', handleRevalidate);
+    window.addEventListener('online', handleRevalidate);
+    window.addEventListener('paula_banners_updated', handleRevalidate);
+
+    // 2. Subscrição em tempo real via Server-Sent Events (SSE) do PocketBase
+    let isSubscribed = false;
+    if (isPocketBaseConfigured) {
+      try {
+        pb.collection('banners')
+          .subscribe('*', () => {
+            loadBanners();
+          })
+          .then(() => {
+            isSubscribed = true;
+          })
+          .catch((subErr) => {
+            console.warn('[useBanners] SSE subscribe aviso:', subErr?.message);
+          });
+      } catch (err) {
+        console.warn('[useBanners] Falha ao iniciar SSE em banners:', err);
+      }
+    }
 
     return () => {
-      window.removeEventListener('storage', handleUpdate);
-      window.removeEventListener('paula_banners_updated', handleUpdate);
+      window.removeEventListener('focus', handleRevalidate);
+      window.removeEventListener('online', handleRevalidate);
+      window.removeEventListener('paula_banners_updated', handleRevalidate);
+      if (isSubscribed && isPocketBaseConfigured) {
+        try {
+          pb.collection('banners').unsubscribe('*');
+        } catch {}
+      }
     };
   }, [loadBanners]);
 

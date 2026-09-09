@@ -21,6 +21,10 @@ export {
   saveCampaignToDb,
   deleteCampaignFromDb,
   uploadBannerFile,
+  logAuditEvent,
+  fetchAuditLogs,
+  changeAdminPassword,
+  type AuditLog,
 } from './pocketbase';
 
 export const BUCKET_NAME = 'uploads';

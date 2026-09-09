@@ -13,7 +13,8 @@ import {
   Layers,
   Image as ImageIcon,
   Building2,
-  Megaphone
+  Megaphone,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useBanners, DEFAULT_BANNERS } from '../../hooks/useBanners';
@@ -21,7 +22,8 @@ import { ImageUploader } from './ImageUploader';
 import { PropertiesManager } from './PropertiesManager';
 import { CampaignsManager } from './CampaignsManager';
 import { ConstructionProgressManager } from './ConstructionProgressManager';
-import { upsertBannerToDb, uploadBannerFile, BUCKET_NAME } from '../../lib/supabase';
+import { SettingsModal } from './SettingsModal';
+import { upsertBannerToDb, uploadBannerFile, logAuditEvent, BUCKET_NAME } from '../../lib/supabase';
 import type { Banner, SectionMeta } from '../../types/banner';
 
 type DashboardTab = 'banners' | 'properties' | 'campaigns';
@@ -75,6 +77,7 @@ export const AdminDashboard: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Carrega os dados do banner selecionado
   useEffect(() => {
@@ -130,6 +133,10 @@ export const AdminDashboard: React.FC = () => {
       };
 
       await upsertBannerToDb(bannerPayload);
+      await logAuditEvent(
+        'Atualização de Banner',
+        `Banner da seção "${currentSectionMeta.label}" atualizado com sucesso.`
+      );
       await refreshBanners();
 
       setSelectedFile(null);
@@ -186,15 +193,6 @@ export const AdminDashboard: React.FC = () => {
                 Painel Administrativo
               </span>
             </div>
-            {isLocalDev ? (
-              <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2.5 py-1 rounded-full border border-amber-300">
-                ⚡ Modo Local / Teste
-              </span>
-            ) : (
-              <span className="hidden sm:inline-block bg-primary/10 text-primary text-[11px] font-bold px-2.5 py-1 rounded-full border border-primary/20">
-                Supabase Coolify
-              </span>
-            )}
           </div>
 
           <div className="flex items-center gap-3">
@@ -207,6 +205,15 @@ export const AdminDashboard: React.FC = () => {
               <span className="hidden md:inline">Ver Site ao Vivo</span>
               <ExternalLink size={12} className="opacity-50" />
             </Link>
+
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-700 hover:text-primary bg-gray-100 hover:bg-gray-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer"
+              title="Configurações e Auditoria"
+            >
+              <Settings size={14} />
+              <span className="hidden sm:inline">Configurações</span>
+            </button>
 
             <button
               onClick={() => signOut()}
@@ -529,6 +536,9 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
       </main>
+
+      {/* Modal de Configurações e Auditoria */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 };

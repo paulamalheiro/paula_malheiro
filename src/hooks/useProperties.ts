@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Property } from '../types/property';
-import { fetchPropertiesFromDb, savePropertyToDb, deletePropertyFromDb } from '../lib/supabase';
+import { fetchPropertiesFromDb, savePropertyToDb, deletePropertyFromDb, pb, isPocketBaseConfigured } from '../lib/supabase';
 import { INITIAL_PROPERTIES } from '../lib/propertiesData';
 
 export const useProperties = () => {
@@ -13,8 +13,8 @@ export const useProperties = () => {
       setLoading(true);
       setError(null);
       const data = await fetchPropertiesFromDb();
-      if (data && data.length > 0) {
-        setProperties(data);
+      if (Array.isArray(data)) {
+        setProperties(data.length > 0 ? data : INITIAL_PROPERTIES);
       }
     } catch (err: any) {
       console.warn('[useProperties] Erro ao carregar empreendimentos:', err.message);
@@ -26,6 +26,43 @@ export const useProperties = () => {
 
   useEffect(() => {
     loadProperties();
+
+    // 1. Revalidação ao retomar o foco da janela ou recuperar conexão
+    const handleRevalidate = () => {
+      loadProperties();
+    };
+
+    window.addEventListener('focus', handleRevalidate);
+    window.addEventListener('online', handleRevalidate);
+
+    // 2. Subscrição em tempo real via Server-Sent Events (SSE) do PocketBase
+    let isSubscribed = false;
+    if (isPocketBaseConfigured) {
+      try {
+        pb.collection('properties')
+          .subscribe('*', () => {
+            loadProperties();
+          })
+          .then(() => {
+            isSubscribed = true;
+          })
+          .catch((subErr) => {
+            console.warn('[useProperties] SSE subscribe aviso:', subErr?.message);
+          });
+      } catch (err) {
+        console.warn('[useProperties] Falha ao iniciar SSE em properties:', err);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('focus', handleRevalidate);
+      window.removeEventListener('online', handleRevalidate);
+      if (isSubscribed && isPocketBaseConfigured) {
+        try {
+          pb.collection('properties').unsubscribe('*');
+        } catch {}
+      }
+    };
   }, [loadProperties]);
 
   const featuredProperties = properties

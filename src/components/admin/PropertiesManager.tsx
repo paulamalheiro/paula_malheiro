@@ -19,7 +19,7 @@ import {
 import { useProperties } from '../../hooks/useProperties';
 import { ImageUploader } from './ImageUploader';
 import { SmartImage } from '../common/SmartImage';
-import { uploadBannerFile } from '../../lib/supabase';
+import { uploadBannerFile, logAuditEvent } from '../../lib/supabase';
 import type { Property, PropertyActionType } from '../../types/property';
 
 export const PropertiesManager: React.FC = () => {
@@ -61,6 +61,7 @@ export const PropertiesManager: React.FC = () => {
     if (window.confirm(`Tem certeza que deseja excluir o empreendimento "${title}"?`)) {
       try {
         await deleteProperty(id);
+        await logAuditEvent('Exclusão de Empreendimento', `Empreendimento "${title}" foi excluído.`);
         setFeedback({ type: 'success', message: `Empreendimento "${title}" removido com sucesso.` });
       } catch (err: any) {
         setFeedback({ type: 'error', message: err.message || 'Erro ao excluir.' });
@@ -98,6 +99,8 @@ export const PropertiesManager: React.FC = () => {
         newGalleryUrls.push(res.publicUrl);
       }
 
+      const isNew = !editingProperty.id || editingProperty.id.startsWith('prop-') || editingProperty.id.startsWith('local-');
+
       const payload: Partial<Property> = {
         ...editingProperty,
         image_url: finalImageUrl,
@@ -106,6 +109,10 @@ export const PropertiesManager: React.FC = () => {
       };
 
       await saveProperty(payload);
+      await logAuditEvent(
+        isNew ? 'Criação de Empreendimento' : 'Edição de Empreendimento',
+        `Empreendimento "${payload.title}" (${payload.location}) ${isNew ? 'criado' : 'atualizado'} com sucesso.`
+      );
 
       setFeedback({
         type: 'success',

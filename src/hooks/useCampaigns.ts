@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Campaign } from '../types/property';
-import { fetchCampaignsFromDb, saveCampaignToDb, deleteCampaignFromDb } from '../lib/supabase';
+import { fetchCampaignsFromDb, saveCampaignToDb, deleteCampaignFromDb, pb, isPocketBaseConfigured } from '../lib/supabase';
 
 export const useCampaigns = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
@@ -12,7 +12,9 @@ export const useCampaigns = () => {
       setLoading(true);
       setError(null);
       const data = await fetchCampaignsFromDb();
-      setCampaigns(data);
+      if (Array.isArray(data)) {
+        setCampaigns(data);
+      }
     } catch (err: any) {
       console.warn('[useCampaigns] Erro ao carregar campanhas:', err.message);
       setError(err.message || 'Erro ao carregar campanhas');
@@ -23,6 +25,43 @@ export const useCampaigns = () => {
 
   useEffect(() => {
     loadCampaigns();
+
+    // 1. Revalidação ao retomar o foco da janela ou recuperar conexão
+    const handleRevalidate = () => {
+      loadCampaigns();
+    };
+
+    window.addEventListener('focus', handleRevalidate);
+    window.addEventListener('online', handleRevalidate);
+
+    // 2. Subscrição em tempo real via Server-Sent Events (SSE) do PocketBase
+    let isSubscribed = false;
+    if (isPocketBaseConfigured) {
+      try {
+        pb.collection('campaigns')
+          .subscribe('*', () => {
+            loadCampaigns();
+          })
+          .then(() => {
+            isSubscribed = true;
+          })
+          .catch((subErr) => {
+            console.warn('[useCampaigns] SSE subscribe aviso:', subErr?.message);
+          });
+      } catch (err) {
+        console.warn('[useCampaigns] Falha ao iniciar SSE em campaigns:', err);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('focus', handleRevalidate);
+      window.removeEventListener('online', handleRevalidate);
+      if (isSubscribed && isPocketBaseConfigured) {
+        try {
+          pb.collection('campaigns').unsubscribe('*');
+        } catch {}
+      }
+    };
   }, [loadCampaigns]);
 
   const activeCampaign = campaigns.find((c) => c.is_active) || null;

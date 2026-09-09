@@ -11,12 +11,9 @@ export const isPocketBaseConfigured = Boolean(
   POCKETBASE_URL && !POCKETBASE_URL.includes('sua_url')
 );
 
-// Instância única do PocketBase com sincronização automática de auth via localStorage
+// Instância única do PocketBase com sincronização de auth e auto-cancellation desativado
 export const pb = new PocketBase(POCKETBASE_URL);
-
-const LOCAL_STORAGE_BANNERS_KEY = 'paula_banners_local_db';
-const LOCAL_STORAGE_PROPERTIES_KEY = 'paula_properties_local_db';
-const LOCAL_STORAGE_CAMPAIGNS_KEY = 'paula_campaigns_local_db';
+pb.autoCancellation(false);
 
 /**
  * Constrói a URL pública da imagem/vídeo respeitando o PocketBase ou fallbacks locais.
@@ -45,60 +42,154 @@ export const getImageUrl = (imagePath?: string | null): string => {
 };
 
 /* ==============================================================================
+   SERVIÇO DE AUDITORIA & LOGS (POCKETBASE)
+   ============================================================================== */
+
+export interface AuditLog {
+  id: string;
+  action: string;
+  user_email: string;
+  details?: string;
+  created: string;
+}
+
+/**
+ * Registra um evento no histórico de auditoria no PocketBase.
+ */
+export const logAuditEvent = async (action: string, details?: string): Promise<void> => {
+  try {
+    const userEmail = pb.authStore.record?.email || 'admin@paulamalheiro.com.br';
+    await pb.collection('audit_logs').create(
+      {
+        action,
+        user_email: userEmail,
+        details: details || '',
+      },
+      { requestKey: null }
+    );
+  } catch (err: any) {
+    console.warn('[PocketBase] Falha ao registrar log de auditoria:', err?.message);
+  }
+};
+
+/**
+ * Recupera os logs de auditoria em ordem cronológica reversa (mais recentes primeiro).
+ */
+export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
+  if (!isPocketBaseConfigured) return [];
+  try {
+    const records = await pb.collection('audit_logs').getFullList({
+      sort: '-created',
+      requestKey: null,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
+
+    return records.map((r) => ({
+      id: r.id,
+      action: r.action,
+      user_email: r.user_email || '',
+      details: r.details || '',
+      created: r.created,
+    }));
+  } catch (err: any) {
+    console.error('[PocketBase] Erro ao carregar logs de auditoria:', err);
+    return [];
+  }
+};
+
+/* ==============================================================================
+   SERVIÇO DE ALTERAÇÃO DE SENHA (POCKETBASE)
+   ============================================================================== */
+
+export const changeAdminPassword = async (
+  oldPassword: string,
+  newPassword: string,
+  newPasswordConfirm: string
+): Promise<void> => {
+  if (!pb.authStore.isValid || !pb.authStore.record?.id) {
+    throw new Error('Sessão expirada ou usuário não autenticado. Faça login novamente.');
+  }
+
+  if (!oldPassword) {
+    throw new Error('Informe sua senha atual.');
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error('A nova senha deve possuir pelo menos 8 caracteres.');
+  }
+
+  if (newPassword !== newPasswordConfirm) {
+    throw new Error('A confirmação da nova senha não confere.');
+  }
+
+  const userId = pb.authStore.record.id;
+  const collectionName = pb.authStore.record.collectionName || 'users';
+
+  try {
+    await pb.collection(collectionName).update(userId, {
+      oldPassword,
+      password: newPassword,
+      passwordConfirm: newPasswordConfirm,
+    });
+
+    await logAuditEvent('Alteração de Senha', 'A senha do administrador foi alterada com sucesso.');
+  } catch (err: any) {
+    const msg =
+      err?.data?.data?.oldPassword?.message ||
+      err?.data?.message ||
+      err?.message ||
+      'Falha ao alterar senha. Verifique se a senha atual está correta.';
+    throw new Error(msg);
+  }
+};
+
+/* ==============================================================================
    SERVIÇOS DE BANNERS (POCKETBASE)
    ============================================================================== */
 
 export const fetchBannersFromDb = async (): Promise<Banner[]> => {
-  let pbBanners: Banner[] = [];
-  if (isPocketBaseConfigured) {
-    try {
-      const records = await pb.collection('banners').getFullList({
-        sort: 'created',
-        requestKey: null,
-      });
-
-      if (records && records.length > 0) {
-        pbBanners = records.map((r) => ({
-          id: r.id,
-          section: r.section,
-          title: r.title || null,
-          subtitle: r.subtitle || null,
-          tag: r.tag || null,
-          image_path: r.image_path || '',
-          button_text: r.button_text || null,
-          button_link: r.button_link || null,
-          active: r.active ?? true,
-          created_at: r.created || r.created_at,
-          updated_at: r.updated || r.updated_at,
-        })) as Banner[];
-      }
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao carregar banners:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    return [];
   }
 
-  // Se houver dados salvos no LocalStorage (como edições recentes do admin neste navegador), mescla
   try {
-    const localData = typeof window !== 'undefined' ? localStorage.getItem(LOCAL_STORAGE_BANNERS_KEY) : null;
-    if (localData) {
-      const localList = JSON.parse(localData) as Banner[];
-      if (localList.length > 0) {
-        if (pbBanners.length === 0) return localList;
-        // Mescla garantindo que alterações locais tenham prioridade na visualização imediata
-        return pbBanners.map((pbItem) => {
-          const localMatch = localList.find((l) => l.section === pbItem.section);
-          return localMatch ? { ...pbItem, ...localMatch } : pbItem;
-        });
-      }
-    }
-  } catch (e) {
-    console.error('Erro ao ler banners locais:', e);
-  }
+    const records = await pb.collection('banners').getFullList({
+      sort: 'created',
+      requestKey: null,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
 
-  return pbBanners;
+    if (records && records.length > 0) {
+      return records.map((r) => ({
+        id: r.id,
+        section: r.section,
+        title: r.title || null,
+        subtitle: r.subtitle || null,
+        tag: r.tag || null,
+        image_path: r.image_path || '',
+        button_text: r.button_text || null,
+        button_link: r.button_link || null,
+        active: r.active ?? true,
+        created_at: r.created || r.created_at,
+        updated_at: r.updated || r.updated_at,
+      })) as Banner[];
+    }
+    return [];
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao carregar banners do banco remoto:', error?.message);
+    throw new Error(`Falha ao conectar ao servidor de banners: ${error?.message}`);
+  }
 };
 
 export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
+  if (!isPocketBaseConfigured) {
+    throw new Error('Servidor PocketBase não configurado.');
+  }
+
   const payload = {
     section: banner.section,
     title: banner.title,
@@ -110,73 +201,45 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
     active: banner.active ?? true,
   };
 
-  let savedRecord: Banner | null = null;
-
-  if (isPocketBaseConfigured) {
-    try {
-      let existingId = banner.id;
-
-      // Se não tiver ID válido de 15 caracteres do PocketBase, busca por seção
-      if (!existingId || existingId.startsWith('local-') || existingId.startsWith('banner-')) {
-        try {
-          const existing = await pb
-            .collection('banners')
-            .getFirstListItem(`section="${banner.section}"`, { requestKey: null });
-          if (existing) {
-            existingId = existing.id;
-          }
-        } catch {}
-      }
-
-      let record;
-      if (existingId && !existingId.startsWith('local-') && !existingId.startsWith('banner-')) {
-        record = await pb.collection('banners').update(existingId, payload);
-      } else {
-        record = await pb.collection('banners').create(payload);
-      }
-
-      savedRecord = {
-        id: record.id,
-        ...payload,
-        created_at: record.created,
-        updated_at: record.updated,
-      } as Banner;
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao salvar banner no PocketBase:', error?.message);
-    }
-  }
-
-  // Sempre sincroniza com LocalStorage para visualização imediata com zero latência
   try {
-    const currentList = await fetchBannersFromDb();
-    const existingIndex = currentList.findIndex((b) => b.section === banner.section);
-    const fullBanner: Banner = savedRecord || { id: banner.id || `local-${Date.now()}`, ...payload };
+    let existingId = banner.id;
 
-    if (existingIndex >= 0) {
-      currentList[existingIndex] = fullBanner;
-    } else {
-      currentList.push(fullBanner);
+    // Se não tiver ID válido de 15 caracteres do PocketBase, busca pelo campo section
+    if (!existingId || existingId.startsWith('local-') || existingId.startsWith('banner-')) {
+      try {
+        const existing = await pb
+          .collection('banners')
+          .getFirstListItem(`section="${banner.section}"`, { requestKey: null });
+        if (existing) {
+          existingId = existing.id;
+        }
+      } catch {}
     }
 
-    localStorage.setItem(LOCAL_STORAGE_BANNERS_KEY, JSON.stringify(currentList));
+    let record;
+    if (existingId && !existingId.startsWith('local-') && !existingId.startsWith('banner-')) {
+      record = await pb.collection('banners').update(existingId, payload);
+    } else {
+      record = await pb.collection('banners').create(payload);
+    }
 
-    // Notifica em tempo real a landing page e qualquer componente aberto
+    const savedRecord: Banner = {
+      id: record.id,
+      ...payload,
+      created_at: record.created,
+      updated_at: record.updated,
+    };
+
+    // Notifica em tempo real a landing page e componentes abertos na mesma janela
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('paula_banners_updated'));
-      window.dispatchEvent(new Event('storage'));
     }
 
-    return fullBanner;
-  } catch (e: any) {
-    console.warn('Erro ao salvar localmente:', e?.message);
-    if (savedRecord) {
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('paula_banners_updated'));
-        window.dispatchEvent(new Event('storage'));
-      }
-      return savedRecord;
-    }
-    throw new Error(`Erro ao salvar banner: ${e?.message}`);
+    return savedRecord;
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao salvar banner:', error);
+    const msg = error?.data?.message || error?.message || 'Falha ao salvar banner no banco remoto.';
+    throw new Error(`Erro ao salvar banner no PocketBase: ${msg}`);
   }
 };
 
@@ -185,55 +248,51 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
    ============================================================================== */
 
 export const fetchPropertiesFromDb = async (): Promise<Property[]> => {
-  if (isPocketBaseConfigured) {
-    try {
-      const records = await pb.collection('properties').getFullList({
-        sort: 'order_index,-created',
-        requestKey: null,
-      });
-
-      if (records && records.length > 0) {
-        return records.map((r) => ({
-          id: r.id,
-          title: r.title,
-          tag: r.tag || null,
-          location: r.location,
-          description: r.description || null,
-          image_url: r.image_url,
-          is_featured: r.is_featured ?? true,
-          is_construction: r.is_construction ?? false,
-          action_type: r.action_type || 'dates_modal',
-          action_url: r.action_url || null,
-          media_type: r.media_type || 'photos',
-          gallery_images: Array.isArray(r.gallery_images) ? r.gallery_images : [],
-          gallery_videos: Array.isArray(r.gallery_videos) ? r.gallery_videos : [],
-          order_index: r.order_index ?? 0,
-          created_at: r.created || r.created_at,
-          updated_at: r.updated || r.updated_at,
-        })) as Property[];
-      }
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao carregar empreendimentos:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    return INITIAL_PROPERTIES;
   }
 
   try {
-    const localData = localStorage.getItem(LOCAL_STORAGE_PROPERTIES_KEY);
-    if (localData) {
-      const parsed = JSON.parse(localData);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed as Property[];
-      }
-    }
-  } catch (e) {
-    console.error('Erro ao ler properties locais:', e);
-  }
+    const records = await pb.collection('properties').getFullList({
+      sort: 'order_index,-created',
+      requestKey: null,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
 
-  localStorage.setItem(LOCAL_STORAGE_PROPERTIES_KEY, JSON.stringify(INITIAL_PROPERTIES));
-  return INITIAL_PROPERTIES;
+    if (records && records.length > 0) {
+      return records.map((r) => ({
+        id: r.id,
+        title: r.title,
+        tag: r.tag || null,
+        location: r.location,
+        description: r.description || null,
+        image_url: r.image_url,
+        is_featured: r.is_featured ?? true,
+        is_construction: r.is_construction ?? false,
+        action_type: r.action_type || 'dates_modal',
+        action_url: r.action_url || null,
+        media_type: r.media_type || 'photos',
+        gallery_images: Array.isArray(r.gallery_images) ? r.gallery_images : [],
+        gallery_videos: Array.isArray(r.gallery_videos) ? r.gallery_videos : [],
+        order_index: r.order_index ?? 0,
+        created_at: r.created || r.created_at,
+        updated_at: r.updated || r.updated_at,
+      })) as Property[];
+    }
+    return [];
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao carregar empreendimentos do banco:', error?.message);
+    throw new Error(`Falha ao conectar com PocketBase para carregar empreendimentos: ${error?.message}`);
+  }
 };
 
 export const savePropertyToDb = async (property: Partial<Property>): Promise<Property> => {
+  if (!isPocketBaseConfigured) {
+    throw new Error('Servidor PocketBase não configurado.');
+  }
+
   const payload = {
     title: property.title || '',
     tag: property.tag || 'LANÇAMENTO',
@@ -250,71 +309,38 @@ export const savePropertyToDb = async (property: Partial<Property>): Promise<Pro
     order_index: property.order_index ?? 0,
   };
 
-  if (isPocketBaseConfigured) {
-    try {
-      let record;
-      if (property.id && !property.id.startsWith('prop-') && !property.id.startsWith('local-')) {
-        record = await pb.collection('properties').update(property.id, payload);
-      } else {
-        record = await pb.collection('properties').create(payload);
-      }
-
-      return {
-        id: record.id,
-        ...payload,
-        created_at: record.created,
-        updated_at: record.updated,
-      } as Property;
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao salvar empreendimento no PocketBase:', error?.message);
+  try {
+    let record;
+    if (property.id && !property.id.startsWith('prop-') && !property.id.startsWith('local-')) {
+      record = await pb.collection('properties').update(property.id, payload);
+    } else {
+      record = await pb.collection('properties').create(payload);
     }
+
+    return {
+      id: record.id,
+      ...payload,
+      created_at: record.created,
+      updated_at: record.updated,
+    } as Property;
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao salvar empreendimento:', error);
+    const msg = error?.data?.message || error?.message || 'Falha ao salvar empreendimento no PocketBase.';
+    throw new Error(`Erro ao salvar empreendimento no servidor: ${msg}`);
   }
-
-  // Fallback Local Storage
-  const list = await fetchPropertiesFromDb();
-  const id = property.id || `prop-${Date.now()}`;
-  const fullProperty: Property = {
-    id,
-    title: payload.title,
-    tag: payload.tag,
-    location: payload.location,
-    description: payload.description,
-    image_url: payload.image_url,
-    is_featured: payload.is_featured,
-    is_construction: payload.is_construction,
-    action_type: payload.action_type as any,
-    action_url: payload.action_url,
-    media_type: payload.media_type as any,
-    gallery_images: payload.gallery_images,
-    gallery_videos: payload.gallery_videos,
-    order_index: payload.order_index,
-    created_at: property.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-
-  const existingIndex = list.findIndex((p) => p.id === id);
-  if (existingIndex >= 0) {
-    list[existingIndex] = fullProperty;
-  } else {
-    list.push(fullProperty);
-  }
-
-  localStorage.setItem(LOCAL_STORAGE_PROPERTIES_KEY, JSON.stringify(list));
-  return fullProperty;
 };
 
 export const deletePropertyFromDb = async (id: string): Promise<void> => {
-  if (isPocketBaseConfigured && !id.startsWith('prop-') && !id.startsWith('local-')) {
-    try {
-      await pb.collection('properties').delete(id);
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao excluir empreendimento no PocketBase:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado.');
   }
 
-  const list = await fetchPropertiesFromDb();
-  const filtered = list.filter((p) => p.id !== id);
-  localStorage.setItem(LOCAL_STORAGE_PROPERTIES_KEY, JSON.stringify(filtered));
+  try {
+    await pb.collection('properties').delete(id);
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao excluir empreendimento:', error);
+    throw new Error(`Erro ao excluir empreendimento no PocketBase: ${error?.message}`);
+  }
 };
 
 /* ==============================================================================
@@ -322,44 +348,44 @@ export const deletePropertyFromDb = async (id: string): Promise<void> => {
    ============================================================================== */
 
 export const fetchCampaignsFromDb = async (): Promise<Campaign[]> => {
-  if (isPocketBaseConfigured) {
-    try {
-      const records = await pb.collection('campaigns').getFullList({
-        sort: '-created',
-        requestKey: null,
-      });
-
-      if (records && records.length > 0) {
-        return records.map((r) => ({
-          id: r.id,
-          title: r.title,
-          media_type: r.media_type || 'image',
-          image_url: r.image_url,
-          video_url: r.video_url || null,
-          video_duration: r.video_duration || null,
-          target_link: r.target_link || '',
-          is_active: r.is_active ?? false,
-          created_at: r.created || r.created_at,
-        })) as Campaign[];
-      }
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao carregar campanhas:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    return [];
   }
 
   try {
-    const localData = localStorage.getItem(LOCAL_STORAGE_CAMPAIGNS_KEY);
-    if (localData) {
-      return JSON.parse(localData) as Campaign[];
-    }
-  } catch (e) {
-    console.error('Erro ao ler campanhas locais:', e);
-  }
+    const records = await pb.collection('campaigns').getFullList({
+      sort: '-created',
+      requestKey: null,
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+      },
+    });
 
-  return [];
+    if (records && records.length > 0) {
+      return records.map((r) => ({
+        id: r.id,
+        title: r.title,
+        media_type: r.media_type || 'image',
+        image_url: r.image_url,
+        video_url: r.video_url || null,
+        video_duration: r.video_duration || null,
+        target_link: r.target_link || '',
+        is_active: r.is_active ?? false,
+        created_at: r.created || r.created_at,
+      })) as Campaign[];
+    }
+    return [];
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao carregar campanhas:', error?.message);
+    throw new Error(`Falha ao carregar campanhas no PocketBase: ${error?.message}`);
+  }
 };
 
 export const saveCampaignToDb = async (campaign: Partial<Campaign>): Promise<Campaign> => {
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado.');
+  }
+
   const payload = {
     title: campaign.title || '',
     media_type: campaign.media_type || 'image',
@@ -370,131 +396,54 @@ export const saveCampaignToDb = async (campaign: Partial<Campaign>): Promise<Cam
     is_active: campaign.is_active ?? false,
   };
 
-  if (isPocketBaseConfigured) {
-    try {
-      if (payload.is_active) {
-        // Desativa outras campanhas ativas
-        try {
-          const activeList = await pb.collection('campaigns').getFullList({
-            filter: 'is_active = true',
-            requestKey: null,
-          });
-          for (const item of activeList) {
-            if (item.id !== campaign.id) {
-              await pb.collection('campaigns').update(item.id, { is_active: false });
-            }
+  try {
+    if (payload.is_active) {
+      // Desativa outras campanhas ativas no banco para garantir unicidade
+      try {
+        const activeList = await pb.collection('campaigns').getFullList({
+          filter: 'is_active = true',
+          requestKey: null,
+        });
+        for (const item of activeList) {
+          if (item.id !== campaign.id) {
+            await pb.collection('campaigns').update(item.id, { is_active: false });
           }
-        } catch {}
+        }
+      } catch (err: any) {
+        console.warn('[PocketBase] Aviso ao desativar outras campanhas:', err?.message);
       }
-
-      let record;
-      if (campaign.id && !campaign.id.startsWith('camp-') && !campaign.id.startsWith('local-')) {
-        record = await pb.collection('campaigns').update(campaign.id, payload);
-      } else {
-        record = await pb.collection('campaigns').create(payload);
-      }
-
-      return {
-        id: record.id,
-        ...payload,
-        created_at: record.created,
-      } as Campaign;
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao salvar campanha no PocketBase:', error?.message);
     }
+
+    let record;
+    if (campaign.id && !campaign.id.startsWith('camp-') && !campaign.id.startsWith('local-')) {
+      record = await pb.collection('campaigns').update(campaign.id, payload);
+    } else {
+      record = await pb.collection('campaigns').create(payload);
+    }
+
+    return {
+      id: record.id,
+      ...payload,
+      created_at: record.created,
+    } as Campaign;
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao salvar campanha:', error);
+    const msg = error?.data?.message || error?.message || 'Falha ao salvar campanha.';
+    throw new Error(`Erro ao salvar campanha no PocketBase: ${msg}`);
   }
-
-  // Fallback Local Storage
-  const list = await fetchCampaignsFromDb();
-  if (payload.is_active) {
-    list.forEach((c) => {
-      c.is_active = false;
-    });
-  }
-
-  const id = campaign.id || `camp-${Date.now()}`;
-  const fullCampaign: Campaign = {
-    id,
-    title: payload.title,
-    media_type: payload.media_type as any,
-    image_url: payload.image_url,
-    video_url: payload.video_url,
-    video_duration: payload.video_duration,
-    target_link: payload.target_link,
-    is_active: payload.is_active,
-    created_at: campaign.created_at || new Date().toISOString(),
-  };
-
-  const existingIndex = list.findIndex((c) => c.id === id);
-  if (existingIndex >= 0) {
-    list[existingIndex] = fullCampaign;
-  } else {
-    list.unshift(fullCampaign);
-  }
-
-  localStorage.setItem(LOCAL_STORAGE_CAMPAIGNS_KEY, JSON.stringify(list));
-  return fullCampaign;
 };
 
 export const deleteCampaignFromDb = async (id: string): Promise<void> => {
-  if (isPocketBaseConfigured && !id.startsWith('camp-') && !id.startsWith('local-')) {
-    try {
-      await pb.collection('campaigns').delete(id);
-    } catch (error: any) {
-      console.warn('[PocketBase] Erro ao excluir campanha:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado.');
   }
 
-  const list = await fetchCampaignsFromDb();
-  const filtered = list.filter((c) => c.id !== id);
-  localStorage.setItem(LOCAL_STORAGE_CAMPAIGNS_KEY, JSON.stringify(filtered));
-};
-
-/**
- * Otimiza e comprime imagens via Canvas no navegador antes do upload ou gravação.
- * Reduz arquivos pesados (ex: fotos de 5MB) para ~150KB ultra-nítidos,
- * garantindo compatibilidade total e carregamento instantâneo.
- */
-export const compressImageFile = (
-  file: File,
-  maxWidth = 1200,
-  maxHeight = 1500,
-  quality = 0.85
-): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    if (!file.type.startsWith('image/')) {
-      return reject(new Error('Arquivo não é uma imagem.'));
-    }
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const img = new Image();
-      img.onload = () => {
-        let width = img.width;
-        let height = img.height;
-
-        if (width > maxWidth || height > maxHeight) {
-          const ratio = Math.min(maxWidth / width, maxHeight / height);
-          width = Math.round(width * ratio);
-          height = Math.round(height * ratio);
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return resolve(e.target?.result as string);
-
-        ctx.drawImage(img, 0, 0, width, height);
-        const dataUrl = canvas.toDataURL('image/jpeg', quality);
-        resolve(dataUrl);
-      };
-      img.onerror = () => resolve(e.target?.result as string);
-      img.src = e.target?.result as string;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
+  try {
+    await pb.collection('campaigns').delete(id);
+  } catch (error: any) {
+    console.error('[PocketBase] Erro ao excluir campanha:', error);
+    throw new Error(`Erro ao excluir campanha no PocketBase: ${error?.message}`);
+  }
 };
 
 /* ==============================================================================
@@ -505,53 +454,28 @@ export const uploadBannerFile = async (
   file: File,
   _prefix = 'banners'
 ): Promise<{ path: string; publicUrl: string }> => {
-  // 1. Tentar upload nativo no PocketBase na coleção 'uploads'
-  if (isPocketBaseConfigured) {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', `${_prefix}-${Date.now()}`);
-
-      const record = await pb.collection('uploads').create(formData, { requestKey: null });
-      const publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
-
-      return {
-        path: publicUrl,
-        publicUrl,
-      };
-    } catch (error: any) {
-      console.warn('[PocketBase] Upload remoto falhou ou offline, usando compressão local:', error?.message);
-    }
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado para upload de arquivos.');
   }
 
-  // 2. Modo Vídeo
-  if (file.type.startsWith('video/')) {
-    const blobUrl = URL.createObjectURL(file);
-    return {
-      path: blobUrl,
-      publicUrl: blobUrl,
-    };
-  }
-
-  // 3. Modo Imagem: Comprime a imagem antes de salvar
   try {
-    const compressedBase64 = await compressImageFile(file);
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', `${_prefix}-${Date.now()}`);
+
+    const record = await pb.collection('uploads').create(formData, { requestKey: null });
+    const publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
+
     return {
-      path: compressedBase64,
-      publicUrl: compressedBase64,
+      path: publicUrl,
+      publicUrl,
     };
-  } catch (err) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Url = reader.result as string;
-        resolve({
-          path: base64Url,
-          publicUrl: base64Url,
-        });
-      };
-      reader.onerror = () => reject(new Error('Erro ao processar arquivo.'));
-      reader.readAsDataURL(file);
-    });
+  } catch (error: any) {
+    console.error('[PocketBase] Erro no upload de arquivo:', error);
+    throw new Error(
+      `Falha no upload do arquivo para o PocketBase: ${
+        error?.data?.message || error?.message || 'Verifique o formato e tamanho do arquivo.'
+      }`
+    );
   }
 };

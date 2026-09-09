@@ -8,14 +8,6 @@ export interface AuthUser {
   role?: string;
 }
 
-// Credenciais de teste / desenvolvimento local
-export const LOCAL_DEV_CREDENTIALS = {
-  email: 'admin@paulamalheiro.com.br',
-  password: 'admin123',
-};
-
-const LOCAL_SESSION_KEY = 'paula_admin_local_session';
-
 interface AuthContextType {
   user: AuthUser | null;
   session: any | null;
@@ -32,48 +24,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isLocalDev, setIsLocalDev] = useState(false);
 
   useEffect(() => {
-    // 1. Verificar se existe uma sessão local de teste salva no navegador
-    const savedLocalSession = localStorage.getItem(LOCAL_SESSION_KEY);
-    if (savedLocalSession) {
-      try {
-        const mockUser = JSON.parse(savedLocalSession) as AuthUser;
-        setUser(mockUser);
-        setIsLocalDev(true);
-        setLoading(false);
-        return;
-      } catch {
-        localStorage.removeItem(LOCAL_SESSION_KEY);
-      }
+    // 1. Limpar resquícios de sessões de mock locais antigas
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('paula_admin_local_session');
     }
 
-    // 2. Checar se já existe sessão salva no PocketBase
+    // 2. Checar se já existe sessão válida persistida no PocketBase
     if (isPocketBaseConfigured && pb.authStore.isValid && pb.authStore.record) {
       const rec = pb.authStore.record;
       setUser({
         id: rec.id,
         email: rec.email || '',
-        name: rec.name || 'Administrador',
+        name: rec.name || 'Paula Malheiro',
         role: rec.role || 'admin',
       });
       setSession({ token: pb.authStore.token });
-      setIsLocalDev(false);
     }
 
-    // Ouvinte para alterações de autenticação no PocketBase
+    // 3. Ouvinte oficial do PocketBase authStore
     const unsubscribe = pb.authStore.onChange((token, model) => {
       if (token && model) {
         setUser({
           id: model.id,
           email: model.email || '',
-          name: model.name || 'Administrador',
+          name: model.name || 'Paula Malheiro',
           role: model.role || 'admin',
         });
         setSession({ token });
-        setIsLocalDev(false);
-      } else if (!localStorage.getItem(LOCAL_SESSION_KEY)) {
+      } else {
         setUser(null);
         setSession(null);
       }
@@ -89,102 +69,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string): Promise<{ error: Error | null }> => {
     const cleanEmail = email.trim().toLowerCase();
 
-    // 1. Suporte às credenciais locais de teste/desenvolvimento
-    if (
-      cleanEmail === LOCAL_DEV_CREDENTIALS.email.toLowerCase() &&
-      password === LOCAL_DEV_CREDENTIALS.password
-    ) {
-      const mockUser: AuthUser = {
-        id: 'local-admin-paula',
-        email: LOCAL_DEV_CREDENTIALS.email,
-        name: 'Paula Malheiro (Admin Local)',
-        role: 'admin',
+    if (!isPocketBaseConfigured) {
+      return {
+        error: new Error(
+          'Servidor PocketBase não configurado. Verifique a variável VITE_POCKETBASE_URL.'
+        ),
       };
-
-      localStorage.setItem(LOCAL_SESSION_KEY, JSON.stringify(mockUser));
-      setUser(mockUser);
-      setIsLocalDev(true);
-      return { error: null };
     }
 
-    // 2. Autenticação via PocketBase
-    if (isPocketBaseConfigured) {
-      // Tentativa A: Coleção 'users' comum
-      try {
-        const authData = await pb.collection('users').authWithPassword(cleanEmail, password);
-        if (authData?.record) {
-          const authenticatedUser: AuthUser = {
-            id: authData.record.id,
-            email: authData.record.email || cleanEmail,
-            name: authData.record.name || 'Administrador',
-            role: 'admin',
-          };
-          setUser(authenticatedUser);
-          setSession({ token: authData.token });
-          setIsLocalDev(false);
-          return { error: null };
-        }
-      } catch (errUsers: any) {
-        // Se não foi encontrado em 'users', tenta autenticar como _superusers (v0.23+)
+    // 1. Tentativa via coleção 'users' (administradores do painel)
+    try {
+      const authData = await pb.collection('users').authWithPassword(cleanEmail, password);
+      if (authData?.record) {
+        const authenticatedUser: AuthUser = {
+          id: authData.record.id,
+          email: authData.record.email || cleanEmail,
+          name: authData.record.name || 'Paula Malheiro',
+          role: 'admin',
+        };
+        setUser(authenticatedUser);
+        setSession({ token: authData.token });
+        return { error: null };
       }
+    } catch (errUsers: any) {
+      // Continua para superuser caso falhe em users
+    }
 
-      // Tentativa B: Superusuário PocketBase v0.23+ (_superusers)
-      try {
-        const superRes = await pb.collection('_superusers').authWithPassword(cleanEmail, password);
-        if (superRes?.record) {
-          const superUser: AuthUser = {
-            id: superRes.record.id,
-            email: superRes.record.email || cleanEmail,
-            name: 'Superuser PocketBase',
-            role: 'superuser',
-          };
-          setUser(superUser);
-          setSession({ token: superRes.token });
-          setIsLocalDev(false);
-          return { error: null };
-        }
-      } catch (errSuper: any) {
-        // Tenta endpoint legado de admins
-        try {
-          const adminRes: any = await pb.admins.authWithPassword(cleanEmail, password);
-          const adminObj = adminRes?.record || adminRes?.admin;
-          if (adminObj) {
-            const adminUser: AuthUser = {
-              id: adminObj.id,
-              email: adminObj.email || cleanEmail,
-              name: 'Admin PocketBase',
-              role: 'superuser',
-            };
-            setUser(adminUser);
-            setSession({ token: adminRes.token });
-            setIsLocalDev(false);
-            return { error: null };
-          }
-        } catch (errAdmin: any) {
-          // Ambos falharam
-        }
+    // 2. Tentativa via coleção '_superusers' (PocketBase v0.23+)
+    try {
+      const superRes = await pb.collection('_superusers').authWithPassword(cleanEmail, password);
+      if (superRes?.record) {
+        const superUser: AuthUser = {
+          id: superRes.record.id,
+          email: superRes.record.email || cleanEmail,
+          name: 'Superusuário PocketBase',
+          role: 'superuser',
+        };
+        setUser(superUser);
+        setSession({ token: superRes.token });
+        return { error: null };
       }
+    } catch (errSuper: any) {
+      // Continua para endpoint legado pb.admins caso aplicável
+    }
 
-      return {
-        error: new Error('Credenciais inválidas. Verifique seu e-mail e senha no PocketBase.'),
-      };
+    // 3. Tentativa via pb.admins (PocketBase legado < v0.23)
+    try {
+      const adminRes: any = await pb.admins.authWithPassword(cleanEmail, password);
+      const adminObj = adminRes?.record || adminRes?.admin;
+      if (adminObj) {
+        const adminUser: AuthUser = {
+          id: adminObj.id,
+          email: adminObj.email || cleanEmail,
+          name: 'Admin PocketBase',
+          role: 'superuser',
+        };
+        setUser(adminUser);
+        setSession({ token: adminRes.token });
+        return { error: null };
+      }
+    } catch (errAdmin: any) {
+      // Falha em todos os provedores PocketBase
     }
 
     return {
-      error: new Error(
-        `PocketBase não configurado. Para teste local, use: ${LOCAL_DEV_CREDENTIALS.email} / ${LOCAL_DEV_CREDENTIALS.password}`
-      ),
+      error: new Error('E-mail ou senha incorretos. Verifique suas credenciais de acesso no PocketBase.'),
     };
   };
 
   const signOut = async () => {
-    localStorage.removeItem(LOCAL_SESSION_KEY);
     if (isPocketBaseConfigured) {
       pb.authStore.clear();
     }
     setSession(null);
     setUser(null);
-    setIsLocalDev(false);
   };
 
   return (
@@ -194,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         loading,
         isConfigured: isPocketBaseConfigured,
-        isLocalDev,
+        isLocalDev: false, // Flags de desenvolvimento/teste desativadas em produção
         signIn,
         signOut,
       }}

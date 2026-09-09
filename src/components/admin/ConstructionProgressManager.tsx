@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useProperties } from '../../hooks/useProperties';
 import { SmartImage } from '../common/SmartImage';
-import { uploadBannerFile } from '../../lib/supabase';
+import { uploadBannerFile, logAuditEvent } from '../../lib/supabase';
 import type { Property, PropertyMediaType } from '../../types/property';
 
 const MAX_PHOTOS = 10;
@@ -57,6 +57,10 @@ export const ConstructionProgressManager: React.FC = () => {
         media_type: newType,
         action_type: newType === 'videos' ? 'video' : 'gallery',
       });
+      await logAuditEvent(
+        'Alteração de Obras',
+        `Formato de mídia da obra "${activeProperty.title}" alterado para ${newType === 'photos' ? 'Fotos' : 'Vídeos'}.`
+      );
       setFeedback({
         type: 'success',
         message: `Formato de exibição da obra alterado para "${newType === 'photos' ? 'Galeria de Fotos' : 'Vídeos da Obra'}".`,
@@ -102,6 +106,10 @@ export const ConstructionProgressManager: React.FC = () => {
         gallery_images: updatedGallery,
         action_type: 'gallery',
       });
+      await logAuditEvent(
+        'Atualização de Obras',
+        `${uploadedUrls.length} foto(s) de obra adicionada(s) ao empreendimento "${activeProperty.title}".`
+      );
 
       setFeedback({
         type: 'success',
@@ -159,6 +167,10 @@ export const ConstructionProgressManager: React.FC = () => {
         media_type: 'videos',
         action_type: 'video',
       });
+      await logAuditEvent(
+        'Atualização de Obras',
+        `Novo vídeo de acompanhamento adicionado à obra "${activeProperty.title}".`
+      );
 
       setFeedback({
         type: 'success',
