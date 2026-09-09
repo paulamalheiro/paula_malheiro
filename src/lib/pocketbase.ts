@@ -17,28 +17,70 @@ pb.autoCancellation(false);
 
 /**
  * Constrói a URL pública da imagem/vídeo respeitando o PocketBase ou fallbacks locais.
- * Suporta URLs absolutas, URLs de arquivos do PocketBase, blob/data URIs e paths relativos.
+ * Suporta URLs absolutas, URLs de arquivos do PocketBase, records com método getUrl, blob/data URIs e paths relativos.
  */
-export const getImageUrl = (imagePath?: string | null): string => {
+export const getImageUrl = (imagePath?: string | null | Record<string, any>): string => {
   if (!imagePath) return '';
+
+  // Se receber um record do PocketBase com objeto de arquivo
+  if (typeof imagePath === 'object' && imagePath !== null) {
+    if (imagePath.collectionId && imagePath.id && imagePath.file) {
+      try {
+        return pb.files.getUrl(imagePath as any, imagePath.file);
+      } catch {
+        return `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.file}`;
+      }
+    }
+    if (imagePath.collectionId && imagePath.id && imagePath.image) {
+      try {
+        return pb.files.getUrl(imagePath as any, imagePath.image);
+      } catch {
+        return `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.image}`;
+      }
+    }
+    if (imagePath.image_path) {
+      return getImageUrl(imagePath.image_path);
+    }
+    if (imagePath.image_url) {
+      return getImageUrl(imagePath.image_url);
+    }
+    return '';
+  }
+
+  let str = String(imagePath).trim();
+  if (!str) return '';
+
+  // Substitui localhost por URL pública de produção caso venha com host de dev
+  if (str.includes('localhost:8090') || str.includes('127.0.0.1:8090')) {
+    str = str.replace(/https?:\/\/(localhost|127\.0\.0\.1):8090/g, POCKETBASE_URL);
+  }
 
   // Se já for uma URL completa ou URI temporária (blob, base64, https://)
   if (
-    imagePath.startsWith('http://') ||
-    imagePath.startsWith('https://') ||
-    imagePath.startsWith('blob:') ||
-    imagePath.startsWith('data:')
+    str.startsWith('http://') ||
+    str.startsWith('https://') ||
+    str.startsWith('blob:') ||
+    str.startsWith('data:')
   ) {
-    return imagePath;
+    return str;
   }
 
-  // Se for um caminho de arquivo do PocketBase (/api/files/...)
-  if (imagePath.startsWith('/api/files/')) {
-    return `${POCKETBASE_URL}${imagePath}`;
+  // Se for um caminho de arquivo do PocketBase (/api/files/... ou api/files/...)
+  if (str.startsWith('/api/files/')) {
+    return `${POCKETBASE_URL}${str}`;
+  }
+  if (str.startsWith('api/files/')) {
+    return `${POCKETBASE_URL}/${str}`;
+  }
+
+  // Se for caminho de upload relativo (ex: uploads/id/file ou /uploads/id/file)
+  if (str.startsWith('/uploads/') || str.startsWith('uploads/')) {
+    const clean = str.replace(/^\/?uploads\//, '');
+    return `${POCKETBASE_URL}/api/files/uploads/${clean}`;
   }
 
   // Fallback para arquivo local em /public
-  return imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
+  return str.startsWith('/') ? str : `/${str}`;
 };
 
 /* ==============================================================================
@@ -63,7 +105,8 @@ export const logAuditEvent = async (
   section?: string
 ): Promise<void> => {
   try {
-    const userEmail = pb.authStore.record?.email || 'admin@paulamalheiro.com.br';
+    const currentRecord = pb.authStore.record || (pb.authStore as any).model;
+    const userEmail = currentRecord?.email || 'admin@paulamalheiro.com.br';
     await pb.collection('audit_logs').create(
       {
         action,
@@ -93,7 +136,7 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
 
     return records.reverse().map((r) => ({
       id: r.id,
-      action: r.action,
+      action: r.action || 'Ação Registrada',
       section: r.section || 'Geral',
       user_email: r.user_email || '',
       details: r.details || '',
@@ -114,7 +157,8 @@ export const changeAdminPassword = async (
   newPassword: string,
   newPasswordConfirm: string
 ): Promise<void> => {
-  if (!pb.authStore.isValid || !pb.authStore.record?.id) {
+  const currentRecord = pb.authStore.record || (pb.authStore as any).model;
+  if (!pb.authStore.isValid || !currentRecord?.id) {
     throw new Error('Sessão expirada ou usuário não autenticado. Faça login novamente.');
   }
 
@@ -130,8 +174,8 @@ export const changeAdminPassword = async (
     throw new Error('A confirmação da nova senha não confere.');
   }
 
-  const userId = pb.authStore.record.id;
-  const collectionName = pb.authStore.record.collectionName || 'users';
+  const userId = currentRecord.id;
+  const collectionName = currentRecord.collectionName || 'users';
 
   try {
     await pb.collection(collectionName).update(userId, {
@@ -514,13 +558,27 @@ export const uploadBannerFile = async (
     throw new Error('PocketBase não configurado para upload de arquivos.');
   }
 
+  if (!file || !(file instanceof File)) {
+    throw new Error('Arquivo de imagem inválido ou não fornecido.');
+  }
+
   try {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', `${_prefix}-${Date.now()}`);
 
     const record = await pb.collection('uploads').create(formData, { requestKey: null });
-    const publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
+
+    let publicUrl = '';
+    try {
+      publicUrl = pb.files.getUrl(record, record.file);
+    } catch {
+      publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
+    }
+
+    if (!publicUrl) {
+      publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
+    }
 
     return {
       path: publicUrl,

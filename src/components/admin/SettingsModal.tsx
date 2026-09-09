@@ -56,9 +56,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     setLogsError(null);
     try {
       const data = await fetchAuditLogs();
-      setLogs(data);
+      setLogs(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setLogsError(err?.message || 'Falha ao carregar histórico de auditoria.');
+      console.warn('[SettingsModal] Falha ao carregar histórico de auditoria:', err?.message);
+      setLogs([]);
+      setLogsError('Histórico de auditoria indisponível no momento.');
     } finally {
       setIsLoadingLogs(false);
     }
@@ -120,8 +122,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const formatLogDate = (dateStr?: string) => {
-    if (!dateStr || dateStr.trim() === '') {
+  const formatLogDate = (dateStr?: any) => {
+    if (!dateStr || typeof dateStr !== 'string' || dateStr.trim() === '') {
       return { date: 'Recente', time: '--:--' };
     }
     try {
@@ -138,8 +140,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
-  const getSectionMeta = (section?: string) => {
-    const sec = (section || '').toLowerCase();
+  const getSectionMeta = (section?: string | null) => {
+    const sec = (section ? String(section) : '').toLowerCase();
     if (sec.includes('empreendimento') || sec.includes('imóvel') || sec.includes('imovel')) {
       return {
         label: 'Gestão de Empreendimentos',
@@ -176,14 +178,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       };
     }
     return {
-      label: section || 'Painel Geral',
+      label: section ? String(section) : 'Painel Geral',
       icon: <ShieldCheck size={13} className="shrink-0" />,
       className: 'bg-gray-100 text-gray-800 border-gray-200',
     };
   };
 
-  const getActionBadgeColor = (action: string) => {
-    const act = action.toLowerCase();
+  const getActionBadgeColor = (action?: string | null) => {
+    const act = (action ? String(action) : '').toLowerCase();
     if (act.includes('cria') || act.includes('cadastr') || act.includes('adicion')) {
       return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     }
@@ -196,26 +198,40 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     return 'bg-sky-50 text-sky-800 border-sky-200';
   };
 
+  const safeLogs = Array.isArray(logs) ? logs : [];
+
   // Filtro de logs por seção e pesquisa textual
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
-      const secMeta = getSectionMeta(log.section);
-      const matchesSection =
-        selectedSectionFilter === 'all' ||
-        secMeta.label === selectedSectionFilter ||
-        (log.section && log.section === selectedSectionFilter);
+    try {
+      const q = (searchQuery || '').toLowerCase().trim();
+      return safeLogs.filter((log) => {
+        if (!log || typeof log !== 'object') return false;
 
-      const q = searchQuery.toLowerCase().trim();
-      const matchesSearch =
-        !q ||
-        log.action.toLowerCase().includes(q) ||
-        (log.details || '').toLowerCase().includes(q) ||
-        (log.section || '').toLowerCase().includes(q) ||
-        log.user_email.toLowerCase().includes(q);
+        const secMeta = getSectionMeta(log.section);
+        const matchesSection =
+          selectedSectionFilter === 'all' ||
+          secMeta.label === selectedSectionFilter ||
+          (Boolean(log.section) && String(log.section) === selectedSectionFilter);
 
-      return matchesSection && matchesSearch;
-    });
-  }, [logs, selectedSectionFilter, searchQuery]);
+        const actionStr = (log.action ? String(log.action) : '').toLowerCase();
+        const detailsStr = (log.details ? String(log.details) : '').toLowerCase();
+        const sectionStr = (log.section ? String(log.section) : '').toLowerCase();
+        const emailStr = (log.user_email ? String(log.user_email) : '').toLowerCase();
+
+        const matchesSearch =
+          !q ||
+          actionStr.includes(q) ||
+          detailsStr.includes(q) ||
+          sectionStr.includes(q) ||
+          emailStr.includes(q);
+
+        return matchesSection && matchesSearch;
+      });
+    } catch (err) {
+      console.warn('[SettingsModal] Erro ao filtrar logs:', err);
+      return [];
+    }
+  }, [safeLogs, selectedSectionFilter, searchQuery]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
@@ -480,13 +496,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
               ) : (
                 <div className="overflow-hidden border border-gray-200/80 rounded-2xl shadow-xs bg-white">
                   <div className="max-h-[500px] overflow-y-auto divide-y divide-gray-100">
-                    {filteredLogs.map((log) => {
-                      const { date, time } = formatLogDate(log.created);
-                      const secMeta = getSectionMeta(log.section);
+                    {filteredLogs.map((log, index) => {
+                      const logId = log?.id || `log-item-${index}`;
+                      const { date, time } = formatLogDate(log?.created);
+                      const secMeta = getSectionMeta(log?.section);
 
                       return (
                         <div 
-                          key={log.id} 
+                          key={logId} 
                           className="p-4 hover:bg-gray-50/80 transition-colors flex flex-col gap-2"
                         >
                           <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -502,10 +519,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                               {/* Badge da Ação */}
                               <span
                                 className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${getActionBadgeColor(
-                                  log.action
+                                  log?.action
                                 )}`}
                               >
-                                {log.action}
+                                {log?.action || 'Ação'}
                               </span>
                             </div>
 
@@ -523,7 +540,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                           </div>
 
                           {/* Detalhes da Ação */}
-                          {log.details && (
+                          {log?.details && (
                             <p className="text-xs sm:text-[13px] text-gray-800 font-medium leading-relaxed pl-1">
                               {log.details}
                             </p>
@@ -532,7 +549,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                           {/* Autor da Ação */}
                           <div className="flex items-center gap-1.5 text-[11px] text-gray-400 pl-1">
                             <User size={12} className="text-gray-400" />
-                            <span>Executado por: <strong className="text-gray-600 font-semibold">{log.user_email || 'admin@paulamalheiro.com.br'}</strong></span>
+                            <span>Executado por: <strong className="text-gray-600 font-semibold">{log?.user_email || 'admin@paulamalheiro.com.br'}</strong></span>
                           </div>
                         </div>
                       );

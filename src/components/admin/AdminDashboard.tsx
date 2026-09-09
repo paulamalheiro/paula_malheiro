@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   LogOut, 
@@ -79,8 +79,21 @@ export const AdminDashboard: React.FC = () => {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const prevSectionRef = useRef<string>(activeSection);
+
   // Carrega os dados do banner selecionado
   useEffect(() => {
+    const isSectionChanged = prevSectionRef.current !== activeSection;
+    if (isSectionChanged) {
+      setSelectedFile(null);
+      prevSectionRef.current = activeSection;
+    }
+
+    // Se o usuário já selecionou um arquivo local pendente para upload na mesma seção, não reseta
+    if (!isSectionChanged && selectedFile) {
+      return;
+    }
+
     const currentBanner = getBanner(activeSection);
     const fallback: Partial<Banner> = DEFAULT_BANNERS[activeSection] || {};
     
@@ -94,7 +107,6 @@ export const AdminDashboard: React.FC = () => {
       button_link: currentBanner.button_link ?? fallback.button_link ?? '',
       active: currentBanner.active ?? true,
     });
-    setSelectedFile(null);
   }, [activeSection, banners]);
 
   useEffect(() => {
