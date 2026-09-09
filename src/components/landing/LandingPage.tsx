@@ -54,10 +54,10 @@ const Navbar = () => {
             <div className="text-[16px] sm:text-2xl lg:text-3xl font-sans text-primary font-bold leading-none tracking-tight whitespace-nowrap">Paula Malheiro</div>
             <div className="text-[7px] sm:text-[10px] lg:text-[11px] text-gray-500 uppercase tracking-[0.2em] mt-1 sm:mt-1.5 font-medium">Corretora de Imóveis</div>
           </div>
-          <SmartImage 
-            src="/logo.png.PNG" 
-            alt="Logo VCA" 
-            className="w-[50px] sm:w-[80px] lg:w-[110px] object-contain"
+          <img 
+            src="/vca-logo.png" 
+            alt="VCA Construtora" 
+            className="h-7 sm:h-9 lg:h-10 w-auto object-contain shrink-0"
           />
         </div>
         <div className="hidden xl:flex items-center justify-center gap-6 text-[13px] font-semibold text-gray-600 flex-1">
@@ -931,10 +931,10 @@ const Footer = () => (
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
           <div className="text-2xl font-sans text-primary font-bold leading-none tracking-tight">Paula Malheiro</div>
-          <SmartImage 
-            src="/logo.png.PNG" 
-            alt="Logo VCA" 
-            className="w-36 h-12 object-contain"
+          <img 
+            src="/vca-logo.png" 
+            alt="VCA Construtora" 
+            className="h-10 sm:h-11 w-auto object-contain self-start shrink-0"
           />
           <div className="text-[12px] text-gray-500 uppercase tracking-[0.2em] font-medium">Corretora de Imóveis</div>
         </div>
