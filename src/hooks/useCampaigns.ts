@@ -33,6 +33,7 @@ export const useCampaigns = () => {
 
     window.addEventListener('focus', handleRevalidate);
     window.addEventListener('online', handleRevalidate);
+    window.addEventListener('paula_campaigns_updated', handleRevalidate);
 
     // 2. Subscrição em tempo real via Server-Sent Events (SSE) do PocketBase
     let isSubscribed = false;
@@ -56,6 +57,7 @@ export const useCampaigns = () => {
     return () => {
       window.removeEventListener('focus', handleRevalidate);
       window.removeEventListener('online', handleRevalidate);
+      window.removeEventListener('paula_campaigns_updated', handleRevalidate);
       if (isSubscribed && isPocketBaseConfigured) {
         try {
           pb.collection('campaigns').unsubscribe('*');

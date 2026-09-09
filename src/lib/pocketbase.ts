@@ -79,14 +79,13 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
   if (!isPocketBaseConfigured) return [];
   try {
     const records = await pb.collection('audit_logs').getFullList({
-      sort: '-created',
       requestKey: null,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
 
-    return records.map((r) => ({
+    return records.reverse().map((r) => ({
       id: r.id,
       action: r.action,
       user_email: r.user_email || '',
@@ -156,7 +155,6 @@ export const fetchBannersFromDb = async (): Promise<Banner[]> => {
 
   try {
     const records = await pb.collection('banners').getFullList({
-      sort: 'created',
       requestKey: null,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -254,7 +252,7 @@ export const fetchPropertiesFromDb = async (): Promise<Property[]> => {
 
   try {
     const records = await pb.collection('properties').getFullList({
-      sort: 'order_index,-created',
+      sort: 'order_index',
       requestKey: null,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -310,11 +308,31 @@ export const savePropertyToDb = async (property: Partial<Property>): Promise<Pro
   };
 
   try {
+    let existingId = property.id;
+
+    // Se o ID for de mock/local ('prop-...' ou 'local-'), tenta encontrar o registro existente no PocketBase pelo título
+    if (!existingId || existingId.startsWith('prop-') || existingId.startsWith('local-')) {
+      try {
+        const cleanTitle = (property.title || '').replace(/"/g, '\\"');
+        const existing = await pb
+          .collection('properties')
+          .getFirstListItem(`title="${cleanTitle}"`, { requestKey: null });
+        if (existing) {
+          existingId = existing.id;
+        }
+      } catch {}
+    }
+
     let record;
-    if (property.id && !property.id.startsWith('prop-') && !property.id.startsWith('local-')) {
-      record = await pb.collection('properties').update(property.id, payload);
+    if (existingId && !existingId.startsWith('prop-') && !existingId.startsWith('local-')) {
+      record = await pb.collection('properties').update(existingId, payload);
     } else {
       record = await pb.collection('properties').create(payload);
+    }
+
+    // Notifica em tempo real a landing page e componentes abertos na mesma janela
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('paula_properties_updated'));
     }
 
     return {
@@ -337,6 +355,9 @@ export const deletePropertyFromDb = async (id: string): Promise<void> => {
 
   try {
     await pb.collection('properties').delete(id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('paula_properties_updated'));
+    }
   } catch (error: any) {
     console.error('[PocketBase] Erro ao excluir empreendimento:', error);
     throw new Error(`Erro ao excluir empreendimento no PocketBase: ${error?.message}`);
@@ -354,7 +375,6 @@ export const fetchCampaignsFromDb = async (): Promise<Campaign[]> => {
 
   try {
     const records = await pb.collection('campaigns').getFullList({
-      sort: '-created',
       requestKey: null,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -414,11 +434,31 @@ export const saveCampaignToDb = async (campaign: Partial<Campaign>): Promise<Cam
       }
     }
 
+    let existingId = campaign.id;
+
+    // Se o ID for de mock/local ('camp-...' ou 'local-'), tenta encontrar o registro existente pelo título
+    if (!existingId || existingId.startsWith('camp-') || existingId.startsWith('local-')) {
+      try {
+        const cleanTitle = (campaign.title || '').replace(/"/g, '\\"');
+        const existing = await pb
+          .collection('campaigns')
+          .getFirstListItem(`title="${cleanTitle}"`, { requestKey: null });
+        if (existing) {
+          existingId = existing.id;
+        }
+      } catch {}
+    }
+
     let record;
-    if (campaign.id && !campaign.id.startsWith('camp-') && !campaign.id.startsWith('local-')) {
-      record = await pb.collection('campaigns').update(campaign.id, payload);
+    if (existingId && !existingId.startsWith('camp-') && !existingId.startsWith('local-')) {
+      record = await pb.collection('campaigns').update(existingId, payload);
     } else {
       record = await pb.collection('campaigns').create(payload);
+    }
+
+    // Notifica em tempo real a landing page e componentes abertos na mesma janela
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('paula_campaigns_updated'));
     }
 
     return {
@@ -440,6 +480,9 @@ export const deleteCampaignFromDb = async (id: string): Promise<void> => {
 
   try {
     await pb.collection('campaigns').delete(id);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('paula_campaigns_updated'));
+    }
   } catch (error: any) {
     console.error('[PocketBase] Erro ao excluir campanha:', error);
     throw new Error(`Erro ao excluir campanha no PocketBase: ${error?.message}`);

@@ -34,6 +34,7 @@ export const useProperties = () => {
 
     window.addEventListener('focus', handleRevalidate);
     window.addEventListener('online', handleRevalidate);
+    window.addEventListener('paula_properties_updated', handleRevalidate);
 
     // 2. Subscrição em tempo real via Server-Sent Events (SSE) do PocketBase
     let isSubscribed = false;
@@ -57,6 +58,7 @@ export const useProperties = () => {
     return () => {
       window.removeEventListener('focus', handleRevalidate);
       window.removeEventListener('online', handleRevalidate);
+      window.removeEventListener('paula_properties_updated', handleRevalidate);
       if (isSubscribed && isPocketBaseConfigured) {
         try {
           pb.collection('properties').unsubscribe('*');
