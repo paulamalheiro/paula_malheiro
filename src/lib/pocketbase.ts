@@ -4,7 +4,8 @@ import type { Property, Campaign } from '../types/property';
 import { INITIAL_PROPERTIES } from './propertiesData';
 
 export const POCKETBASE_URL = (
-  import.meta.env.VITE_POCKETBASE_URL || 'https://pb-paula.janagencia.com.br'
+  (typeof import.meta !== 'undefined' && import.meta?.env?.VITE_POCKETBASE_URL) ||
+  'https://pb-paula.janagencia.com.br'
 ).replace(/\/$/, '');
 
 export const isPocketBaseConfigured = Boolean(
@@ -134,7 +135,8 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
       },
     });
 
-    return records.reverse().map((r) => ({
+    const safeList = Array.isArray(records) ? [...records] : [];
+    return safeList.reverse().map((r) => ({
       id: r.id,
       action: r.action || 'Ação Registrada',
       section: r.section || 'Geral',

@@ -24,24 +24,39 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-[#F8F7F5] flex flex-col items-center justify-center p-6 text-center">
-          <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-xl max-w-md w-full space-y-4">
+          <div className="bg-white p-8 rounded-3xl border border-gray-200 shadow-xl max-w-lg w-full space-y-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto font-bold text-xl">
               !
             </div>
             <h2 className="text-xl font-sans font-bold text-gray-900">Instabilidade na Exibição</h2>
             <p className="text-xs text-gray-500 leading-relaxed">
-              Ocorreu uma inconsistência temporária ao carregar este bloco. Clique no botão abaixo para restaurar o painel.
+              Ocorreu uma inconsistência temporária ao carregar este bloco.
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                this.setState({ hasError: false, error: null });
-                window.location.href = '/admin';
-              }}
-              className="w-full py-3 bg-primary hover:bg-accent text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
-            >
-              Recarregar Painel Administrativo
-            </button>
+            {this.state.error && (
+              <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-left text-xs font-mono text-red-700 max-h-36 overflow-y-auto break-all">
+                {this.state.error.message || String(this.state.error)}
+              </div>
+            )}
+            <div className="flex gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                }}
+                className="flex-1 py-3 bg-primary hover:bg-accent text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+              >
+                Tentar Novamente
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = '/admin';
+                }}
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                Recarregar Painel
+              </button>
+            </div>
           </div>
         </div>
       );

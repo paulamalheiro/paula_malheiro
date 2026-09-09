@@ -29,7 +29,75 @@ interface SettingsModalProps {
 
 type SettingsTab = 'password' | 'logs';
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+class SettingsErrorBoundary extends React.Component<
+  { children: React.ReactNode; isOpen: boolean; onClose: () => void },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode; isOpen: boolean; onClose: () => void }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[SettingsModal ErrorBoundary]:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError && this.props.isOpen) {
+      return (
+        <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-red-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-red-600 font-bold">
+                <AlertCircle size={20} />
+                <span>Configurações do Painel</span>
+              </div>
+              <button 
+                type="button"
+                onClick={this.props.onClose} 
+                className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Ocorreu um imprevisto temporário ao carregar o conteúdo de configurações.
+            </p>
+            {this.state.error && (
+              <div className="bg-red-50 p-3 rounded-xl text-xs font-mono text-red-700 break-all max-h-32 overflow-y-auto">
+                {this.state.error.message || String(this.state.error)}
+              </div>
+            )}
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => this.setState({ hasError: false, error: null })}
+                className="px-4 py-2 bg-primary hover:bg-accent text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                Tentar Novamente
+              </button>
+              <button
+                type="button"
+                onClick={this.props.onClose}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-xl transition-colors cursor-pointer"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('logs');
 
@@ -145,43 +213,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     if (sec.includes('empreendimento') || sec.includes('imóvel') || sec.includes('imovel')) {
       return {
         label: 'Gestão de Empreendimentos',
-        icon: <Layers size={13} className="shrink-0" />,
+        iconType: 'layers',
         className: 'bg-blue-50 text-blue-800 border-blue-200/80',
       };
     }
     if (sec.includes('obra') || sec.includes('construção') || sec.includes('construcao')) {
       return {
         label: 'Evolução das Obras',
-        icon: <Hammer size={13} className="shrink-0" />,
+        iconType: 'hammer',
         className: 'bg-amber-50 text-amber-800 border-amber-200/80',
       };
     }
     if (sec.includes('banner') || sec.includes('hero') || sec.includes('história')) {
       return {
         label: 'Banners Principais',
-        icon: <Sliders size={13} className="shrink-0" />,
+        iconType: 'sliders',
         className: 'bg-indigo-50 text-indigo-800 border-indigo-200/80',
       };
     }
     if (sec.includes('campanha') || sec.includes('pop') || sec.includes('popup')) {
       return {
         label: 'Campanhas & Pop-up',
-        icon: <Megaphone size={13} className="shrink-0" />,
+        iconType: 'megaphone',
         className: 'bg-rose-50 text-rose-800 border-rose-200/80',
       };
     }
     if (sec.includes('senha') || sec.includes('seguran') || sec.includes('acesso')) {
       return {
         label: 'Segurança & Acesso',
-        icon: <KeyRound size={13} className="shrink-0" />,
+        iconType: 'key',
         className: 'bg-purple-50 text-purple-800 border-purple-200/80',
       };
     }
     return {
       label: section ? String(section) : 'Painel Geral',
-      icon: <ShieldCheck size={13} className="shrink-0" />,
+      iconType: 'shield',
       className: 'bg-gray-100 text-gray-800 border-gray-200',
     };
+  };
+
+  const renderSectionIcon = (iconType?: string) => {
+    switch (iconType) {
+      case 'layers': return <Layers size={13} className="shrink-0" />;
+      case 'hammer': return <Hammer size={13} className="shrink-0" />;
+      case 'sliders': return <Sliders size={13} className="shrink-0" />;
+      case 'megaphone': return <Megaphone size={13} className="shrink-0" />;
+      case 'key': return <KeyRound size={13} className="shrink-0" />;
+      default: return <ShieldCheck size={13} className="shrink-0" />;
+    }
   };
 
   const getActionBadgeColor = (action?: string | null) => {
@@ -510,9 +589,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                             <div className="flex items-center gap-2 flex-wrap">
                               {/* Badge da Seção da Página */}
                               <span
-                                className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border shadow-2xs ${secMeta.className}`}
+                                className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1 rounded-lg border shadow-xs ${secMeta.className}`}
                               >
-                                {secMeta.icon}
+                                {renderSectionIcon(secMeta.iconType)}
                                 <span>{secMeta.label}</span>
                               </span>
 
@@ -576,5 +655,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         </div>
       </div>
     </div>
+  );
+};
+
+export const SettingsModal: React.FC<SettingsModalProps> = (props) => {
+  return (
+    <SettingsErrorBoundary isOpen={props.isOpen} onClose={props.onClose}>
+      <SettingsModalContent {...props} />
+    </SettingsErrorBoundary>
   );
 };
