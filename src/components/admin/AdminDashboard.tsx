@@ -554,7 +554,9 @@ export const AdminDashboard: React.FC = () => {
       </main>
 
       {/* Modal de Configurações e Auditoria */}
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {isSettingsOpen && (
+        <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      )}
     </div>
   );
 };

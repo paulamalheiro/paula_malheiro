@@ -143,8 +143,6 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   }, [isOpen, activeTab]);
 
-  if (!isOpen) return null;
-
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordFeedback(null);
@@ -311,6 +309,8 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
       return [];
     }
   }, [safeLogs, selectedSectionFilter, searchQuery]);
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
