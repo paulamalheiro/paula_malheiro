@@ -135,7 +135,8 @@ export const AdminDashboard: React.FC = () => {
       await upsertBannerToDb(bannerPayload);
       await logAuditEvent(
         'Atualização de Banner',
-        `Banner da seção "${currentSectionMeta.label}" atualizado com sucesso.`
+        `Banner da seção "${currentSectionMeta.label}" atualizado com sucesso.`,
+        'Banners Principais'
       );
       await refreshBanners();
 

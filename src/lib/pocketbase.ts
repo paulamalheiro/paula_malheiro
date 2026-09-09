@@ -48,6 +48,7 @@ export const getImageUrl = (imagePath?: string | null): string => {
 export interface AuditLog {
   id: string;
   action: string;
+  section?: string;
   user_email: string;
   details?: string;
   created: string;
@@ -56,12 +57,17 @@ export interface AuditLog {
 /**
  * Registra um evento no histórico de auditoria no PocketBase.
  */
-export const logAuditEvent = async (action: string, details?: string): Promise<void> => {
+export const logAuditEvent = async (
+  action: string,
+  details?: string,
+  section?: string
+): Promise<void> => {
   try {
     const userEmail = pb.authStore.record?.email || 'admin@paulamalheiro.com.br';
     await pb.collection('audit_logs').create(
       {
         action,
+        section: section || 'Geral',
         user_email: userEmail,
         details: details || '',
       },
@@ -88,9 +94,10 @@ export const fetchAuditLogs = async (): Promise<AuditLog[]> => {
     return records.reverse().map((r) => ({
       id: r.id,
       action: r.action,
+      section: r.section || 'Geral',
       user_email: r.user_email || '',
       details: r.details || '',
-      created: r.created,
+      created: r.created || r.updated || '',
     }));
   } catch (err: any) {
     console.error('[PocketBase] Erro ao carregar logs de auditoria:', err);
@@ -133,7 +140,11 @@ export const changeAdminPassword = async (
       passwordConfirm: newPasswordConfirm,
     });
 
-    await logAuditEvent('Alteração de Senha', 'A senha do administrador foi alterada com sucesso.');
+    await logAuditEvent(
+      'Alteração de Senha',
+      'A senha do administrador foi alterada com sucesso.',
+      'Segurança & Acesso'
+    );
   } catch (err: any) {
     const msg =
       err?.data?.data?.oldPassword?.message ||

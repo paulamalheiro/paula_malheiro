@@ -71,7 +71,8 @@ export const CampaignsManager: React.FC = () => {
       });
       await logAuditEvent(
         'Alteração de Campanha',
-        `Campanha "${camp.title}" foi ${nextActive ? 'ativada' : 'desativada'}.`
+        `Campanha "${camp.title}" foi ${nextActive ? 'ativada' : 'desativada'}.`,
+        'Campanhas & Pop-up'
       );
       setFeedback({
         type: 'success',
@@ -88,7 +89,7 @@ export const CampaignsManager: React.FC = () => {
     if (window.confirm(`Deseja realmente excluir a campanha "${title}"?`)) {
       try {
         await deleteCampaign(id);
-        await logAuditEvent('Exclusão de Campanha', `Campanha "${title}" foi excluída.`);
+        await logAuditEvent('Exclusão de Campanha', `Campanha "${title}" foi excluída.`, 'Campanhas & Pop-up');
         setFeedback({ type: 'success', message: 'Campanha excluída com sucesso.' });
       } catch (err: any) {
         setFeedback({ type: 'error', message: err.message || 'Erro ao excluir campanha.' });
@@ -217,7 +218,8 @@ export const CampaignsManager: React.FC = () => {
       await saveCampaign(payload);
       await logAuditEvent(
         isNew ? 'Criação de Campanha' : 'Edição de Campanha',
-        `Campanha "${payload.title}" ${isNew ? 'criada' : 'atualizada'} com sucesso.`
+        `Campanha "${payload.title}" ${isNew ? 'criada' : 'atualizada'} com sucesso.`,
+        'Campanhas & Pop-up'
       );
 
       setFeedback({

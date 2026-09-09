@@ -59,7 +59,8 @@ export const ConstructionProgressManager: React.FC = () => {
       });
       await logAuditEvent(
         'Alteração de Obras',
-        `Formato de mídia da obra "${activeProperty.title}" alterado para ${newType === 'photos' ? 'Fotos' : 'Vídeos'}.`
+        `Formato de mídia da obra "${activeProperty.title}" alterado para ${newType === 'photos' ? 'Fotos' : 'Vídeos'}.`,
+        'Evolução das Obras'
       );
       setFeedback({
         type: 'success',
@@ -108,7 +109,8 @@ export const ConstructionProgressManager: React.FC = () => {
       });
       await logAuditEvent(
         'Atualização de Obras',
-        `${uploadedUrls.length} foto(s) de obra adicionada(s) ao empreendimento "${activeProperty.title}".`
+        `${uploadedUrls.length} foto(s) de obra adicionada(s) ao empreendimento "${activeProperty.title}".`,
+        'Evolução das Obras'
       );
 
       setFeedback({
@@ -169,7 +171,8 @@ export const ConstructionProgressManager: React.FC = () => {
       });
       await logAuditEvent(
         'Atualização de Obras',
-        `Novo vídeo de acompanhamento adicionado à obra "${activeProperty.title}".`
+        `Novo vídeo de acompanhamento adicionado à obra "${activeProperty.title}".`,
+        'Evolução das Obras'
       );
 
       setFeedback({
