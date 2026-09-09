@@ -711,7 +711,7 @@ const Progress = () => {
                   className="group relative aspect-[3/4] rounded-2xl overflow-hidden shadow-md cursor-pointer bg-gray-100 border border-gray-100 hover:shadow-xl transition-all"
                 >
                   <SmartImage 
-                    src={prop.image_url} 
+                    src={prop.progress_cover_image || prop.image_url} 
                     alt={prop.title} 
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
                   />

@@ -271,22 +271,28 @@ export const ConstructionProgressManager: React.FC = () => {
     }
   };
 
-  // Definir como capa principal do card
+  // Definir como capa principal exclusiva da seção "Evolução das Obras"
   const handleSetAsCover = async (photoUrl: string) => {
     if (!activeProperty) return;
 
     try {
       await saveProperty({
         ...activeProperty,
-        image_url: photoUrl,
+        progress_cover_image: photoUrl,
       });
+
+      await logAuditEvent(
+        'Atualização de Capa de Obra',
+        `Foto de capa da obra "${activeProperty.title}" definida com sucesso.`,
+        'Evolução das Obras'
+      );
 
       setFeedback({
         type: 'success',
-        message: 'Foto definida como a capa do empreendimento na Evolução das Obras!',
+        message: 'Foto definida como a capa exclusiva na Evolução das Obras!',
       });
     } catch (err: any) {
-      setFeedback({ type: 'error', message: err.message || 'Erro ao definir capa.' });
+      setFeedback({ type: 'error', message: err.message || 'Erro ao definir capa da obra.' });
     }
   };
 
@@ -682,6 +688,30 @@ export const ConstructionProgressManager: React.FC = () => {
                 </div>
               )}
 
+              {/* Card de Destaque da Capa Atual da Obra */}
+              <div className="p-4 bg-gradient-to-r from-amber-500/10 to-amber-500/5 rounded-2xl border border-amber-300/40 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-14 h-18 rounded-xl overflow-hidden shadow-xs border border-amber-300 shrink-0 bg-gray-100">
+                    <SmartImage
+                      src={activeProperty.progress_cover_image || activeProperty.image_url}
+                      alt="Capa da Obra"
+                      className="w-full h-full object-cover"
+                    />
+                    <span className="absolute bottom-0 inset-x-0 bg-amber-500 text-white text-[8px] font-bold text-center py-0.5 uppercase tracking-wider">
+                      Capa Obra
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider block">
+                      Foto de Capa Exclusiva para "Evolução das Obras"
+                    </span>
+                    <p className="text-xs text-amber-800/90 mt-0.5">
+                      Esta foto é exibida exclusivamente no card desta obra na página inicial, sem alterar a imagem do catálogo.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Zona de Upload de Fotos */}
               {!isPhotosMaxReached && (
                 <label
@@ -743,7 +773,7 @@ export const ConstructionProgressManager: React.FC = () => {
                 ) : (
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                     {currentGallery.map((imgUrl, idx) => {
-                      const isCover = activeProperty.image_url === imgUrl;
+                      const isCover = (activeProperty.progress_cover_image || activeProperty.image_url) === imgUrl;
                       return (
                         <div
                           key={idx}

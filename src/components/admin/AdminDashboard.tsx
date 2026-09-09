@@ -121,7 +121,9 @@ export const AdminDashboard: React.FC = () => {
         throw new Error('É obrigatório ter uma imagem definida para o banner.');
       }
 
+      const currentBanner = getBanner(activeSection);
       const bannerPayload: Banner = {
+        id: currentBanner?.id,
         section: activeSection,
         title: formData.title || null,
         subtitle: formData.subtitle || null,
@@ -391,6 +393,7 @@ export const AdminDashboard: React.FC = () => {
 
                     <form onSubmit={handleSaveBanner} className="space-y-6">
                       <ImageUploader
+                        key={activeSection}
                         currentImagePath={formData.image_path}
                         onImageSelected={(file) => setSelectedFile(file)}
                         aspectRatio={currentSectionMeta.aspectRatio}

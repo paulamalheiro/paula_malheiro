@@ -20,14 +20,28 @@ export const DEFAULT_BANNERS: Record<string, Banner> = {
     subtitle: 'Minha História',
     tag: 'Minha História',
     image_path: '/paula-perfil.jpeg',
+    button_text: 'Fale Comigo',
+    button_link: 'https://wa.me/5577991465337',
     active: true,
   },
   investment: {
     section: 'investment',
     title: 'Paula Malheiro',
     subtitle: 'Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.',
-    tag: 'Investimento',
+    tag: 'Investimento & Vantagens',
     image_path: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80',
+    button_text: 'Simular Investimento',
+    button_link: '#contact',
+    active: true,
+  },
+  construction: {
+    section: 'construction',
+    title: 'Acompanhamento de Obras',
+    subtitle: 'Confira o acompanhamento real de cada etapa dos nossos empreendimentos com transparência.',
+    tag: 'Evolução das Obras',
+    image_path: '/paula-hero.jpeg',
+    button_text: 'Ver Obras',
+    button_link: '#construction',
     active: true,
   },
 };
@@ -98,17 +112,38 @@ export const useBanners = () => {
 
   /**
    * Retorna os dados de um banner específico por seção com fallback garantido.
+   * Suporta aliases em português (obras, sobre_mim, investimento) e inglês (construction, about, investment).
    */
   const getBanner = (section: string): Banner => {
-    const found = banners.find((b) => b.section === section && b.active);
+    const aliases: Record<string, string[]> = {
+      hero: ['hero', 'principal'],
+      construction: ['construction', 'obras', 'acompanhamento_obras'],
+      about: ['about', 'sobre_mim', 'perfil'],
+      investment: ['investment', 'investimento', 'vantagens'],
+    };
+
+    // Descobre as chaves equivalentes para busca
+    const targetKeys = Object.entries(aliases).find(([canonical, alts]) => 
+      canonical === section || alts.includes(section)
+    )?.[1] || [section];
+
+    const canonicalKey = Object.entries(aliases).find(([canonical, alts]) => 
+      canonical === section || alts.includes(section)
+    )?.[0] || section;
+
+    const found = banners.find((b) => targetKeys.includes(b.section) && b.active);
     if (found) {
       return found;
     }
-    return DEFAULT_BANNERS[section] || {
-      section,
-      image_path: '/paula-hero.jpeg',
-      active: true,
-    };
+
+    return (
+      DEFAULT_BANNERS[canonicalKey] ||
+      DEFAULT_BANNERS[section] || {
+        section,
+        image_path: '/paula-hero.jpeg',
+        active: true,
+      }
+    );
   };
 
   /**

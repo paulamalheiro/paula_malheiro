@@ -8,6 +8,7 @@ export interface Property {
   location: string;
   description?: string | null;
   image_url: string;
+  progress_cover_image?: string | null; // Capa exclusiva para a seção "Evolução das Obras"
   is_featured: boolean;       // Exibir em "Empreendimentos em Destaque"
   is_construction: boolean;   // Exibir em "Evolução das Obras"
   action_type: PropertyActionType;

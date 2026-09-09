@@ -278,6 +278,7 @@ export const fetchPropertiesFromDb = async (): Promise<Property[]> => {
         location: r.location,
         description: r.description || null,
         image_url: r.image_url,
+        progress_cover_image: r.progress_cover_image || null,
         is_featured: r.is_featured ?? true,
         is_construction: r.is_construction ?? false,
         action_type: r.action_type || 'dates_modal',
@@ -302,12 +303,13 @@ export const savePropertyToDb = async (property: Partial<Property>): Promise<Pro
     throw new Error('Servidor PocketBase não configurado.');
   }
 
-  const payload = {
+  const payload: Record<string, any> = {
     title: property.title || '',
     tag: property.tag || 'LANÇAMENTO',
     location: property.location || '',
     description: property.description || '',
     image_url: property.image_url || '',
+    progress_cover_image: property.progress_cover_image || '',
     is_featured: property.is_featured ?? true,
     is_construction: property.is_construction ?? false,
     action_type: property.action_type || 'dates_modal',

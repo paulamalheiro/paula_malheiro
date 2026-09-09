@@ -21,6 +21,13 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reseta o preview temporário sempre que a imagem atual (ou seção) for alterada
+  useEffect(() => {
+    setPreviewUrl(null);
+    setSelectedFileName(null);
+    setErrorMsg(null);
+  }, [currentImagePath]);
+
   const handleFile = (file: File) => {
     setErrorMsg(null);
     if (!file.type.startsWith('image/')) {
