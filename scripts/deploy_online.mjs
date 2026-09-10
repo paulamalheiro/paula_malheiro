@@ -51,22 +51,39 @@ async function main() {
     process.exit(1);
   }
 
+  // 5. Acionamento do Deploy no Coolify via Webhook / API
+  console.log('\n[5/5] Acionando deploy automático no Coolify...');
+  const coolifyUrl = 'http://2.24.99.187:8000/api/v1/deploy?uuid=p10i63vuzaejlphawq5hgs42&force=false';
+  const token = '10|NP4yiFPOr4ncPklzdNwyWaCMpyrh6YBsYU6huFLu6a418791';
+  try {
+    const res = await fetch(coolifyUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const depUuid = data.deployments?.[0]?.deployment_uuid || '';
+      console.log(`✓ Deploy acionado com sucesso no Coolify! (UUID: ${depUuid})`);
+    } else {
+      console.warn('Deploy webhook retornou status:', res.status);
+    }
+  } catch (e) {
+    console.warn('Aviso: Não foi possível acionar o webhook do Coolify automaticamente:', e.message);
+  }
+
   console.log(`
 =============================================================================
-   ✅ CÓDIGO ATUALIZADO NO GITHUB COM SUCESSO!
+   ✅ DEPLOY CONCLUÍDO COM SUCESSO!
 =============================================================================
 
 Repositório: github.com/paulamalheiro/paula_malheiro (branch: main)
+Servidor Coolify: http://2.24.99.187:8000
 
-📡 Atualização no Coolify:
-1. Se o Webhook do Coolify estiver ativo, o deploy já começou automaticamente.
-2. No painel do Coolify -> Aplicação "Site Paula":
-   - Verifique se a variável está configurada em 'Environment Variables':
-     VITE_POCKETBASE_URL=https://pb-paula.janagencia.com.br
-   - Caso necessário, clique no botão "Redeploy" para gerar a versão atualizada.
-
-🌐 URLs Oficiais:
-- Frontend Produção: https://paula.janagencia.com.br
+🌐 URLs Oficiais em Produção:
+- Site Público: https://paula.janagencia.com.br
 - Backend PocketBase: https://pb-paula.janagencia.com.br
 =============================================================================
 `);
