@@ -123,12 +123,31 @@ const Hero = () => {
   const { getBanner } = useBanners();
   const heroBanner = getBanner('hero');
 
-  const heroTag = heroBanner.tag || 'Especialista em Imóveis na Planta';
-  const heroSubtitle = heroBanner.subtitle || 'Com mais de 10 anos de experiência, minha intenção aqui é conectar você às oportunidades em imóveis através de um atendimento humano e personalizado para encontrarmos a melhor opção para o seu momento atual.';
+  const rawTag = heroBanner.tag?.trim() || '';
+  const isBiographicTag = rawTag.toLowerCase().includes('minha história') || rawTag.toLowerCase().includes('creci');
+  const defaultHeroTag = 'ESPECIALISTA EM IMÓVEIS NA PLANTA - VCA CONSTRUTORA';
+  const heroTag = (!isBiographicTag && rawTag.length > 0) ? rawTag : defaultHeroTag;
+
+  const defaultHeroSubtitle = 'Com mais de 10 anos de experiência, minha intenção aqui é conectar você às oportunidades em imóveis através de um atendimento humano e personalizado para encontrarmos a melhor opção para o seu momento atual.';
+
+  // Isolamento estrito: impede vazamento de texto biográfico da seção Sobre Mim para o Hero
+  const rawSubtitle = heroBanner.subtitle?.trim() || '';
+  const isBiographicText = rawSubtitle.toLowerCase().includes('caetit') || 
+                           rawSubtitle.toLowerCase().includes('creci') ||
+                           rawSubtitle.toLowerCase().includes('concluí minha formação') ||
+                           rawSubtitle.toLowerCase().includes('minha trajetória');
+
+  const heroSubtitle = (!isBiographicText && rawSubtitle.length > 0) ? rawSubtitle : defaultHeroSubtitle;
   const heroBtnText = heroBanner.button_text || 'Conheça os Empreendimentos';
   const heroBtnLink = heroBanner.button_link || '#projects';
   const heroImage = heroBanner.image_path || '/paula-hero.jpeg';
-  const heroTitle = heroBanner.title || 'a compra do seu imóvel como uma experiência segura e transparente!';
+
+  const rawTitle = heroBanner.title?.trim() || '';
+  const isBiographicTitle = rawTitle.toLowerCase().includes('caetit') || 
+                            rawTitle.toLowerCase().includes('creci') ||
+                            rawTitle.toLowerCase().includes('minha história');
+  const defaultHeroTitle = 'a compra do seu imóvel como uma experiência segura e transparente!';
+  const heroTitle = (!isBiographicTitle && rawTitle.length > 0) ? rawTitle : defaultHeroTitle;
 
   return (
     <section id="home" className="relative pt-12 pb-24 overflow-hidden">
@@ -611,8 +630,13 @@ const About = () => {
   const { getBanner } = useBanners();
   const aboutBanner = getBanner('about');
   const aboutImage = aboutBanner.image_path || '/paula-perfil.jpeg';
-  const aboutTag = aboutBanner.tag?.trim() || 'Minha História';
-  const aboutSignature = aboutBanner.title?.trim() || 'Paula Malheiro – CRECI 21.188';
+  const rawTag = aboutBanner.tag?.trim() || '';
+  const isHeroTag = rawTag.toLowerCase().includes('vca construtora') || rawTag.toLowerCase().includes('imóveis na planta');
+  const aboutTag = (!isHeroTag && rawTag.length > 0) ? rawTag : 'Minha História';
+
+  const rawTitle = aboutBanner.title?.trim() || '';
+  const isHeroTitle = rawTitle.toLowerCase().includes('compra do seu imóvel') || rawTitle.toLowerCase().includes('experiência segura');
+  const aboutSignature = (!isHeroTitle && rawTitle.length > 0) ? rawTitle : 'Paula Malheiro – CRECI 21.188';
 
   const defaultStory = [
     'Sou natural de Caetité – Bahia e cheguei a Vitória da Conquista em 2012, onde concluí minha formação em Direito e iniciei minha trajetória profissional. Os imóveis, porém, sempre fizeram parte da minha vida, influenciada desde cedo pelo meu pai e sua paixão por negócios.',
@@ -623,8 +647,12 @@ const About = () => {
   ];
 
   const paragraphs = React.useMemo(() => {
-    if (aboutBanner.subtitle && aboutBanner.subtitle.trim()) {
-      const parsed = aboutBanner.subtitle
+    const rawSubtitle = aboutBanner.subtitle?.trim() || '';
+    const isHeroSubtitle = rawSubtitle.toLowerCase().includes('conectar você às oportunidades em imóveis') ||
+                           rawSubtitle.toLowerCase().includes('atendimento humano e personalizado para encontrarmos a melhor opção');
+
+    if (!isHeroSubtitle && rawSubtitle.length > 0) {
+      const parsed = rawSubtitle
         .split('\n')
         .map(p => p.trim())
         .filter(p => p.length > 0);

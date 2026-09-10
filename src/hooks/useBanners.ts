@@ -8,7 +8,7 @@ export const DEFAULT_BANNERS: Record<string, Banner> = {
     section: 'hero',
     title: 'a compra do seu imóvel como uma experiência segura e transparente!',
     subtitle: 'Com mais de 10 anos de experiência, minha intenção aqui é conectar você às oportunidades em imóveis através de um atendimento humano e personalizado para encontrarmos a melhor opção para o seu momento atual.',
-    tag: 'Especialista em Imóveis na Planta',
+    tag: 'ESPECIALISTA EM IMÓVEIS NA PLANTA - VCA CONSTRUTORA',
     image_path: '/paula-hero.jpeg',
     button_text: 'Conheça os Empreendimentos',
     button_link: '#projects',

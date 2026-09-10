@@ -257,23 +257,25 @@ export const upsertBannerToDb = async (banner: Banner): Promise<Banner> => {
   };
 
   try {
-    let existingId = banner.id;
+    // 1. Busca estrita pelo campo section para garantir isolamento absoluto entre registros
+    let targetRecord: any = null;
+    try {
+      targetRecord = await pb
+        .collection('banners')
+        .getFirstListItem(`section="${banner.section}"`, { requestKey: null });
+    } catch {}
 
-    // Se não tiver ID válido de 15 caracteres do PocketBase, busca pelo campo section
-    if (!existingId || existingId.startsWith('local-') || existingId.startsWith('banner-')) {
-      try {
-        const existing = await pb
-          .collection('banners')
-          .getFirstListItem(`section="${banner.section}"`, { requestKey: null });
-        if (existing) {
-          existingId = existing.id;
-        }
-      } catch {}
-    }
-
-    let record;
-    if (existingId && !existingId.startsWith('local-') && !existingId.startsWith('banner-')) {
-      record = await pb.collection('banners').update(existingId, payload);
+    let record: any;
+    if (targetRecord) {
+      // Atualiza estritamente o registro que pertence a esta section
+      record = await pb.collection('banners').update(targetRecord.id, payload);
+    } else if (banner.id && !banner.id.startsWith('local-') && !banner.id.startsWith('banner-')) {
+      const checkRec = await pb.collection('banners').getOne(banner.id).catch(() => null);
+      if (checkRec && checkRec.section === banner.section) {
+        record = await pb.collection('banners').update(banner.id, payload);
+      } else {
+        record = await pb.collection('banners').create(payload);
+      }
     } else {
       record = await pb.collection('banners').create(payload);
     }

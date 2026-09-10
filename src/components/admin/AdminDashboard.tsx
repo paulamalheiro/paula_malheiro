@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   LogOut, 
@@ -10,7 +10,6 @@ import {
   Sparkles,
   RefreshCw,
   Eye,
-  Layers,
   Image as ImageIcon,
   Building2,
   Megaphone,
@@ -67,51 +66,41 @@ const SECTIONS_CONFIG: Record<string, SectionMeta> = {
   },
 };
 
-export const AdminDashboard: React.FC = () => {
-  const { user, signOut, isLocalDev } = useAuth();
-  const { banners, refreshBanners, getBanner } = useBanners();
+/**
+ * Componente isolado para edição de banner por seção.
+ * Garante que o estado, inputs e payload pertençam 100% à seção ativa (sem contaminação cruzada).
+ */
+interface BannerSectionEditorProps {
+  sectionKey: string;
+  sectionMeta: SectionMeta;
+  banner: Banner;
+  onSaved: () => Promise<void>;
+}
 
-  const [activeTab, setActiveTab] = useState<DashboardTab>('properties');
-  const [activeSection, setActiveSection] = useState<string>('hero');
-  const [formData, setFormData] = useState<Partial<Banner>>({});
+const BannerSectionEditor: React.FC<BannerSectionEditorProps> = ({
+  sectionKey,
+  sectionMeta,
+  banner,
+  onSaved,
+}) => {
+  const fallback: Partial<Banner> = DEFAULT_BANNERS[sectionKey] || {};
+  const [formData, setFormData] = useState<Partial<Banner>>({
+    section: sectionKey,
+    title: banner?.title ?? fallback.title ?? '',
+    subtitle: banner?.subtitle ?? fallback.subtitle ?? '',
+    tag: banner?.tag ?? fallback.tag ?? '',
+    image_path: banner?.image_path || fallback.image_path || '',
+    button_text: banner?.button_text ?? fallback.button_text ?? '',
+    button_link: banner?.button_link ?? fallback.button_link ?? '',
+    active: banner?.active ?? true,
+  });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
-  const prevSectionRef = useRef<string>(activeSection);
-
-  // Carrega os dados do banner selecionado
-  useEffect(() => {
-    const isSectionChanged = prevSectionRef.current !== activeSection;
-    if (isSectionChanged) {
-      setSelectedFile(null);
-      prevSectionRef.current = activeSection;
-    }
-
-    // Se o usuário já selecionou um arquivo local pendente para upload na mesma seção, não reseta
-    if (!isSectionChanged && selectedFile) {
-      return;
-    }
-
-    const currentBanner = getBanner(activeSection);
-    const fallback: Partial<Banner> = DEFAULT_BANNERS[activeSection] || {};
-    
-    setFormData({
-      section: activeSection,
-      title: currentBanner.title ?? fallback.title ?? '',
-      subtitle: currentBanner.subtitle ?? fallback.subtitle ?? '',
-      tag: currentBanner.tag ?? fallback.tag ?? '',
-      image_path: currentBanner.image_path || fallback.image_path || '',
-      button_text: currentBanner.button_text ?? fallback.button_text ?? '',
-      button_link: currentBanner.button_link ?? fallback.button_link ?? '',
-      active: currentBanner.active ?? true,
-    });
-  }, [activeSection, banners]);
 
   useEffect(() => {
     if (feedback) {
-      const timer = setTimeout(() => setFeedback(null), 5000);
+      const timer = setTimeout(() => setFeedback(null), 6000);
       return () => clearTimeout(timer);
     }
   }, [feedback]);
@@ -125,7 +114,7 @@ export const AdminDashboard: React.FC = () => {
       let finalImagePath = formData.image_path || '';
 
       if (selectedFile) {
-        const uploadResult = await uploadBannerFile(selectedFile, activeSection);
+        const uploadResult = await uploadBannerFile(selectedFile, sectionKey);
         finalImagePath = uploadResult.path;
       }
 
@@ -133,10 +122,10 @@ export const AdminDashboard: React.FC = () => {
         throw new Error('É obrigatório ter uma imagem definida para o banner.');
       }
 
-      const currentBanner = getBanner(activeSection);
+      // Payload estritamente isolado: NUNCA envia outra seção
       const bannerPayload: Banner = {
-        id: currentBanner?.id,
-        section: activeSection,
+        id: banner?.id,
+        section: sectionKey,
         title: formData.title || null,
         subtitle: formData.subtitle || null,
         tag: formData.tag || null,
@@ -149,18 +138,18 @@ export const AdminDashboard: React.FC = () => {
       await upsertBannerToDb(bannerPayload);
       await logAuditEvent(
         'Atualização de Banner',
-        `Banner da seção "${currentSectionMeta.label}" atualizado com sucesso.`,
+        `Banner da seção "${sectionMeta.label}" atualizado com sucesso.`,
         'Banners Principais'
       );
-      await refreshBanners();
+      await onSaved();
 
       setSelectedFile(null);
       setFeedback({
         type: 'success',
-        message: 'Banner atualizado com sucesso!',
+        message: `Seção "${sectionMeta.label}" atualizada com sucesso!`,
       });
     } catch (err: any) {
-      console.error('[AdminDashboard] Erro ao salvar banner:', err);
+      console.error('[BannerSectionEditor] Erro ao salvar banner:', err);
       setFeedback({
         type: 'error',
         message: err.message || 'Falha ao salvar as alterações.',
@@ -171,18 +160,315 @@ export const AdminDashboard: React.FC = () => {
   };
 
   const handleRestoreDefault = () => {
-    const defaultData = DEFAULT_BANNERS[activeSection];
+    const defaultData = DEFAULT_BANNERS[sectionKey];
     if (defaultData) {
       setFormData({
         ...defaultData,
+        section: sectionKey,
       });
       setSelectedFile(null);
       setFeedback({
         type: 'success',
-        message: 'Valores padrão restaurados no formulário. Clique em "Salvar Alterações" para aplicar.',
+        message: `Valores originais de "${sectionMeta.label}" restaurados no formulário. Clique em "Salvar Alterações" para aplicar ao site.`,
       });
     }
   };
+
+  // Metadados visuais de isolamento para orientar o usuário com total clareza
+  const noticeConfig = (() => {
+    if (sectionKey === 'hero') {
+      return {
+        badge: 'SEÇÃO HERO / TOPO DO SITE',
+        badgeStyle: 'bg-amber-100 text-amber-900 border-amber-300',
+        cardBg: 'bg-amber-50/80 border-amber-200',
+        title: 'Você está editando o Banner Principal (Hero)',
+        description: 'Esta seção altera exclusivamente a mensagem de boas-vindas inicial e o botão no topo do site. Suas alterações aqui NÃO afetam a sua biografia ("Minha História").',
+      };
+    }
+    if (sectionKey === 'about') {
+      return {
+        badge: 'SEÇÃO SOBRE MIM / MINHA HISTÓRIA',
+        badgeStyle: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        cardBg: 'bg-emerald-50/80 border-emerald-200',
+        title: 'Você está editando a Seção "Sobre Mim"',
+        description: 'Esta seção altera exclusivamente a sua biografia, foto de perfil e registro CRECI. O Hero do topo do site permanece 100% isolado e protegido.',
+      };
+    }
+    return {
+      badge: 'SEÇÃO INVESTIMENTO & VANTAGENS',
+      badgeStyle: 'bg-blue-100 text-blue-900 border-blue-300',
+      cardBg: 'bg-blue-50/80 border-blue-200',
+      title: 'Você está editando o Bloco de Investimento',
+      description: 'Esta seção altera os argumentos de valorização e segurança na compra de imóveis na planta.',
+    };
+  })();
+
+  return (
+    <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm space-y-6">
+      {/* Banner de Identificação e Isolamento Visual */}
+      <div className={`p-4 rounded-2xl border flex items-start gap-3.5 ${noticeConfig.cardBg}`}>
+        <div className="p-2 rounded-xl bg-white shadow-xs shrink-0">
+          <Sliders size={18} className="text-primary" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md border ${noticeConfig.badgeStyle}`}>
+              {noticeConfig.badge}
+            </span>
+            <span className="text-xs font-bold text-gray-800">{noticeConfig.title}</span>
+          </div>
+          <p className="text-xs text-gray-600 leading-relaxed">
+            {noticeConfig.description}
+          </p>
+        </div>
+      </div>
+
+      {feedback && (
+        <div
+          className={`p-4 rounded-2xl border flex items-start gap-3 shadow-md animate-in fade-in ${
+            feedback.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border-red-200 text-red-800'
+          }`}
+        >
+          {feedback.type === 'success' ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+          )}
+          <div className="flex-1 text-sm font-medium">{feedback.message}</div>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-4">
+        <div>
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">
+            Gerenciar Conteúdo
+          </span>
+          <h2 className="text-2xl font-sans font-bold text-primary">
+            {sectionMeta.label}
+          </h2>
+          <p className="text-sm text-gray-500 mt-1">
+            {sectionMeta.description}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleRestoreDefault}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-primary bg-gray-100 hover:bg-gray-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer self-start sm:self-auto"
+          title="Restaurar padrão inicial original"
+        >
+          <RefreshCw size={13} /> Restaurar Padrão
+        </button>
+      </div>
+
+      <form onSubmit={handleSaveBanner} className="space-y-6">
+        <ImageUploader
+          key={sectionKey}
+          currentImagePath={formData.image_path}
+          onImageSelected={(file) => setSelectedFile(file)}
+          aspectRatio={sectionMeta.aspectRatio}
+          recommendedResolution={sectionMeta.recommendedResolution}
+        />
+
+        {selectedFile && (
+          <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-2 text-amber-800 text-xs font-semibold">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <span>Nova imagem selecionada ({selectedFile.name}). Clique para aplicar ao site:</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveBanner}
+              disabled={isSaving}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isSaving ? 'Salvando...' : 'Salvar Imagem Agora'}
+            </button>
+          </div>
+        )}
+
+        {sectionMeta.hasTextConfig && (
+          <div className="space-y-4 pt-4 border-t border-gray-100">
+            <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
+              Textos & Chamadas
+            </h4>
+
+            {/* Tag / Etiqueta Superior */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                {sectionKey === 'about'
+                  ? 'Etiqueta / Tag da Seção'
+                  : sectionKey === 'investment'
+                  ? 'Etiqueta do Bloco'
+                  : 'Pré-título / Etiqueta Superior (Hero)'}
+              </label>
+              <input
+                type="text"
+                value={formData.tag || ''}
+                onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                placeholder={
+                  sectionKey === 'about'
+                    ? 'Ex: Minha História'
+                    : sectionKey === 'investment'
+                    ? 'Ex: Por Que Investir na Planta?'
+                    : 'Ex: ESPECIALISTA EM IMÓVEIS NA PLANTA - VCA CONSTRUTORA'
+                }
+                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              />
+            </div>
+
+            {/* Título Principal */}
+            <div>
+              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                {sectionKey === 'about'
+                  ? 'Assinatura / Nome e Registro Profissional'
+                  : sectionKey === 'investment'
+                  ? 'Título Principal do Bloco'
+                  : 'Título / Chamada Principal (Hero)'}
+              </label>
+              <input
+                type="text"
+                value={formData.title || ''}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder={
+                  sectionKey === 'about'
+                    ? 'Ex: Paula Malheiro – CRECI 21.188'
+                    : sectionKey === 'investment'
+                    ? 'Ex: Segurança, Rentabilidade e Conquista Patrimonial'
+                    : 'Ex: a compra do seu imóvel como uma experiência segura e transparente!'
+                }
+                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+              />
+            </div>
+
+            {/* Subtítulo / Conteúdo de Texto */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                  {sectionKey === 'about'
+                    ? 'História / Biografia Completa (Múltiplos Parágrafos)'
+                    : sectionKey === 'investment'
+                    ? 'Frase de Impacto / Citação'
+                    : 'Texto Descritivo / Parágrafo do Hero'}
+                </label>
+                {sectionKey === 'about' && (
+                  <span className="text-[11px] text-primary font-bold">
+                    Dica: Pressione Enter para criar novos parágrafos
+                  </span>
+                )}
+              </div>
+              <textarea
+                rows={sectionKey === 'about' ? 10 : sectionKey === 'investment' ? 4 : 4}
+                value={formData.subtitle || ''}
+                onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
+                placeholder={
+                  sectionKey === 'about'
+                    ? 'Escreva aqui sua história completa e trajetória profissional...'
+                    : sectionKey === 'investment'
+                    ? 'Ex: Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.'
+                    : 'Ex: Com mais de 10 anos de experiência, minha intenção aqui é conectar você às oportunidades em imóveis através de um atendimento humano e personalizado para encontrarmos a melhor opção para o seu momento atual.'
+                }
+                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-y"
+              />
+            </div>
+
+            {sectionKey === 'investment' && (
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                  Autor da Citação
+                </label>
+                <input
+                  type="text"
+                  value={formData.button_text || ''}
+                  onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
+                  placeholder="Ex: Paula Malheiro"
+                  className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+              </div>
+            )}
+
+            {sectionKey === 'hero' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Texto do Botão
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.button_text || ''}
+                    onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
+                    placeholder="Ex: Conheça os Empreendimentos"
+                    className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                    Link do Botão
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.button_link || ''}
+                    onChange={(e) => setFormData({ ...formData, button_link: e.target.value })}
+                    placeholder="Ex: #projects ou https://..."
+                    className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200/70">
+          <div>
+            <span className="block text-sm font-bold text-gray-800">Status da Seção</span>
+            <span className="text-xs text-gray-500">
+              Defina se as informações personalizadas estão ativas no site público
+            </span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={formData.active ?? true}
+              onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+
+        <div className="pt-4 border-t border-gray-100 flex justify-end">
+          <button
+            type="submit"
+            disabled={isSaving}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-accent text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl shadow-primary/25 transition-all hover:scale-[1.02] disabled:opacity-50 cursor-pointer"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <>
+                <Save size={18} />
+                <span>Salvar Alterações</span>
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
+
+export const AdminDashboard: React.FC = () => {
+  const { user, signOut } = useAuth();
+  const { refreshBanners, getBanner } = useBanners();
+
+  const [activeTab, setActiveTab] = useState<DashboardTab>('properties');
+  const [activeSection, setActiveSection] = useState<string>('hero');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const currentSectionMeta = SECTIONS_CONFIG[activeSection] || {
     key: activeSection,
@@ -297,23 +583,6 @@ export const AdminDashboard: React.FC = () => {
         {/* ABA 3: BANNERS PRINCIPAIS */}
         {activeTab === 'banners' && (
           <div className="space-y-6">
-            {feedback && (
-              <div
-                className={`p-4 rounded-2xl border flex items-start gap-3 shadow-md animate-in fade-in ${
-                  feedback.type === 'success'
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-red-50 border-red-200 text-red-800'
-                }`}
-              >
-                {feedback.type === 'success' ? (
-                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1 text-sm font-medium">{feedback.message}</div>
-              </div>
-            )}
-
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               {/* Lateral: Seleção de Seções */}
               <aside className="lg:col-span-4 space-y-4">
@@ -379,226 +648,15 @@ export const AdminDashboard: React.FC = () => {
                 </section>
               ) : (
                 <section className="lg:col-span-8">
-                  <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 mb-6 border-b border-gray-100 gap-4">
-                      <div>
-                        <span className="text-xs font-bold text-accent uppercase tracking-widest">
-                          Gerenciar Conteúdo
-                        </span>
-                        <h2 className="text-2xl font-sans font-bold text-primary">
-                          {currentSectionMeta.label}
-                        </h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                          {currentSectionMeta.description}
-                        </p>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={handleRestoreDefault}
-                        className="inline-flex items-center gap-1 text-xs font-bold text-gray-500 hover:text-primary bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-xl transition-all cursor-pointer self-start sm:self-auto"
-                        title="Restaurar padrão inicial"
-                      >
-                        <RefreshCw size={13} /> Padrão
-                      </button>
-                    </div>
-
-                    <form onSubmit={handleSaveBanner} className="space-y-6">
-                      <ImageUploader
-                        key={activeSection}
-                        currentImagePath={formData.image_path}
-                        onImageSelected={(file) => setSelectedFile(file)}
-                        aspectRatio={currentSectionMeta.aspectRatio}
-                        recommendedResolution={currentSectionMeta.recommendedResolution}
-                      />
-
-                      {selectedFile && (
-                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-                          <div className="flex items-center gap-2 text-amber-800 text-xs font-semibold">
-                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
-                            <span>Nova imagem selecionada ({selectedFile.name}). Clique para aplicar ao site:</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleSaveBanner}
-                            disabled={isSaving}
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-accent text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
-                          >
-                            {isSaving ? 'Salvando...' : 'Salvar Imagem Agora'}
-                          </button>
-                        </div>
-                      )}
-
-                      {currentSectionMeta.hasTextConfig && (
-                        <div className="space-y-4 pt-4 border-t border-gray-100">
-                          <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
-                            Textos & Chamadas
-                          </h4>
-
-                          {/* Tag Superior (Hero, About, Investment) */}
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                              {activeSection === 'about'
-                                ? 'Etiqueta / Tag da Seção'
-                                : activeSection === 'investment'
-                                ? 'Etiqueta do Bloco'
-                                : 'Tag / Etiqueta Superior'}
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.tag || ''}
-                              onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                              placeholder={
-                                activeSection === 'about'
-                                  ? 'Ex: Minha História'
-                                  : activeSection === 'investment'
-                                  ? 'Ex: Por Que Investir na Planta?'
-                                  : 'Ex: Especialista em Imóveis na Planta'
-                              }
-                              className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                            />
-                          </div>
-
-                          {/* Título Principal */}
-                          <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                              {activeSection === 'about'
-                                ? 'Assinatura / Nome e Registro Profissional'
-                                : activeSection === 'investment'
-                                ? 'Título Principal do Bloco'
-                                : 'Título / Chamada Principal'}
-                            </label>
-                            <input
-                              type="text"
-                              value={formData.title || ''}
-                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                              placeholder={
-                                activeSection === 'about'
-                                  ? 'Ex: Paula Malheiro – CRECI 21.188'
-                                  : activeSection === 'investment'
-                                  ? 'Ex: Segurança, Rentabilidade e Conquista Patrimonial'
-                                  : 'Ex: a compra do seu imóvel como uma experiência segura e transparente!'
-                              }
-                              className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                            />
-                          </div>
-
-                          {/* Subtítulo / Conteúdo de Texto */}
-                          <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
-                                {activeSection === 'about'
-                                  ? 'História / Biografia Completa (Múltiplos Parágrafos)'
-                                  : activeSection === 'investment'
-                                  ? 'Frase de Impacto / Citação'
-                                  : 'Subtítulo / Descrição Auxiliar'}
-                              </label>
-                              {activeSection === 'about' && (
-                                <span className="text-[11px] text-primary font-bold">
-                                  Dica: Pressione Enter para criar novos parágrafos
-                                </span>
-                              )}
-                            </div>
-                            <textarea
-                              rows={activeSection === 'about' ? 10 : activeSection === 'investment' ? 4 : 3}
-                              value={formData.subtitle || ''}
-                              onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                              placeholder={
-                                activeSection === 'about'
-                                  ? 'Escreva aqui sua história completa e trajetória profissional...'
-                                  : activeSection === 'investment'
-                                  ? 'Ex: Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.'
-                                  : 'Texto descritivo ou de apoio'
-                              }
-                              className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-y"
-                            />
-                          </div>
-
-                          {activeSection === 'investment' && (
-                            <div>
-                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Autor da Citação
-                              </label>
-                              <input
-                                type="text"
-                                value={formData.button_text || ''}
-                                onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                                placeholder="Ex: Paula Malheiro"
-                                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                              />
-                            </div>
-                          )}
-
-                          {activeSection === 'hero' && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                  Texto do Botão
-                                </label>
-                                <input
-                                  type="text"
-                                  value={formData.button_text || ''}
-                                  onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
-                                  placeholder="Ex: Conheça os Empreendimentos"
-                                  className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                  Link do Botão
-                                </label>
-                                <input
-                                  type="text"
-                                  value={formData.button_link || ''}
-                                  onChange={(e) => setFormData({ ...formData, button_link: e.target.value })}
-                                  placeholder="Ex: #projects ou https://..."
-                                  className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between p-4 rounded-2xl bg-gray-50 border border-gray-200/70">
-                        <div>
-                          <span className="block text-sm font-bold text-gray-800">Status da Seção</span>
-                          <span className="text-xs text-gray-500">
-                            Defina se as informações personalizadas estão ativas no site público
-                          </span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={formData.active ?? true}
-                            onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
-                            className="sr-only peer"
-                          />
-                          <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                        </label>
-                      </div>
-
-                      <div className="pt-4 border-t border-gray-100 flex justify-end">
-                        <button
-                          type="submit"
-                          disabled={isSaving}
-                          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-primary hover:bg-accent text-white px-8 py-4 rounded-2xl font-bold text-sm shadow-xl shadow-primary/25 transition-all hover:scale-[1.02] disabled:opacity-50 cursor-pointer"
-                        >
-                          {isSaving ? (
-                            <>
-                              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span>Salvando...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Save size={18} />
-                              <span>Salvar Alterações</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </form>
-                  </div>
+                  <BannerSectionEditor
+                    key={activeSection}
+                    sectionKey={activeSection}
+                    sectionMeta={currentSectionMeta}
+                    banner={getBanner(activeSection)}
+                    onSaved={async () => {
+                      await refreshBanners();
+                    }}
+                  />
                 </section>
               )}
             </div>
