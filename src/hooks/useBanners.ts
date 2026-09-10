@@ -17,7 +17,13 @@ export const DEFAULT_BANNERS: Record<string, Banner> = {
   about: {
     section: 'about',
     title: 'Paula Malheiro – CRECI 21.188',
-    subtitle: 'Minha História',
+    subtitle: `Sou natural de Caetité – Bahia, e cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.
+
+Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente.
+
+Gosto muito de desafios, de inovar, sou criativa e adoro marketing. Já atuei também na coordenação comercial, e entre inspirar e utilizar minha experiência como bússola, percebi que gosto da liberdade de estar presente e gerir meu próprio negócio ajudando os meus clientes a tomarem a decisão certa, sempre pautado em muita transparência.
+
+Nesses 10 anos de profissão, pude testemunhar vários exemplos de sucesso e retorno financeiros dos clientes que compraram imóveis na planta. Hoje, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.`,
     tag: 'Minha História',
     image_path: '/paula-perfil.jpeg',
     button_text: 'Fale Comigo',
@@ -26,19 +32,19 @@ export const DEFAULT_BANNERS: Record<string, Banner> = {
   },
   investment: {
     section: 'investment',
-    title: 'Paula Malheiro',
+    title: 'Segurança, Rentabilidade e Conquista Patrimonial',
     subtitle: 'Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.',
-    tag: 'Investimento & Vantagens',
-    image_path: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1000&q=80',
-    button_text: 'Simular Investimento',
+    tag: 'Por Que Investir na Planta?',
+    image_path: '/velli.jpeg',
+    button_text: 'Paula Malheiro',
     button_link: '#contact',
     active: true,
   },
   construction: {
     section: 'construction',
-    title: 'Acompanhamento de Obras',
+    title: 'Evolução das Obras',
     subtitle: 'Confira o acompanhamento real de cada etapa dos nossos empreendimentos com transparência.',
-    tag: 'Evolução das Obras',
+    tag: 'Acompanhamento de Obras',
     image_path: '/paula-hero.jpeg',
     button_text: 'Ver Obras',
     button_link: '#construction',

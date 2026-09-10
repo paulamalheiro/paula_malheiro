@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { Component, useState, useEffect, useMemo, useCallback } from 'react';
 import { 
   X, 
   KeyRound, 
@@ -29,13 +29,22 @@ interface SettingsModalProps {
 
 type SettingsTab = 'password' | 'logs';
 
-class SettingsErrorBoundary extends React.Component<
-  { children: React.ReactNode; isOpen: boolean; onClose: () => void },
-  { hasError: boolean; error: Error | null }
-> {
-  constructor(props: { children: React.ReactNode; isOpen: boolean; onClose: () => void }) {
+interface SettingsErrorBoundaryProps {
+  children: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface SettingsErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class SettingsErrorBoundary extends Component<SettingsErrorBoundaryProps, SettingsErrorBoundaryState> {
+  state: SettingsErrorBoundaryState = { hasError: false, error: null };
+
+  constructor(props: SettingsErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null };
   }
 
   static getDerivedStateFromError(error: Error) {
@@ -97,7 +106,96 @@ class SettingsErrorBoundary extends React.Component<
   }
 }
 
+// Funções auxiliares puras no escopo do módulo
+const formatLogDate = (dateStr?: any) => {
+  if (!dateStr || typeof dateStr !== 'string' || dateStr.trim() === '') {
+    return { date: 'Recente', time: '--:--' };
+  }
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      return { date: 'Recente', time: '--:--' };
+    }
+    return {
+      date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
+      time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    };
+  } catch {
+    return { date: 'Recente', time: '--:--' };
+  }
+};
+
+const getSectionMeta = (section?: string | null) => {
+  const sec = (section ? String(section) : '').toLowerCase();
+  if (sec.includes('empreendimento') || sec.includes('imóvel') || sec.includes('imovel')) {
+    return {
+      label: 'Gestão de Empreendimentos',
+      iconType: 'layers',
+      className: 'bg-blue-50 text-blue-800 border-blue-200/80',
+    };
+  }
+  if (sec.includes('obra') || sec.includes('construção') || sec.includes('construcao')) {
+    return {
+      label: 'Evolução das Obras',
+      iconType: 'hammer',
+      className: 'bg-amber-50 text-amber-800 border-amber-200/80',
+    };
+  }
+  if (sec.includes('banner') || sec.includes('hero') || sec.includes('história')) {
+    return {
+      label: 'Banners Principais',
+      iconType: 'sliders',
+      className: 'bg-indigo-50 text-indigo-800 border-indigo-200/80',
+    };
+  }
+  if (sec.includes('campanha') || sec.includes('pop') || sec.includes('popup')) {
+    return {
+      label: 'Campanhas & Pop-up',
+      iconType: 'megaphone',
+      className: 'bg-rose-50 text-rose-800 border-rose-200/80',
+    };
+  }
+  if (sec.includes('senha') || sec.includes('seguran') || sec.includes('acesso')) {
+    return {
+      label: 'Segurança & Acesso',
+      iconType: 'key',
+      className: 'bg-purple-50 text-purple-800 border-purple-200/80',
+    };
+  }
+  return {
+    label: section ? String(section) : 'Painel Geral',
+    iconType: 'shield',
+    className: 'bg-gray-100 text-gray-800 border-gray-200',
+  };
+};
+
+const renderSectionIcon = (iconType?: string) => {
+  switch (iconType) {
+    case 'layers': return <Layers size={13} className="shrink-0" />;
+    case 'hammer': return <Hammer size={13} className="shrink-0" />;
+    case 'sliders': return <Sliders size={13} className="shrink-0" />;
+    case 'megaphone': return <Megaphone size={13} className="shrink-0" />;
+    case 'key': return <KeyRound size={13} className="shrink-0" />;
+    default: return <ShieldCheck size={13} className="shrink-0" />;
+  }
+};
+
+const getActionBadgeColor = (action?: string | null) => {
+  const act = (action ? String(action) : '').toLowerCase();
+  if (act.includes('cria') || act.includes('cadastr') || act.includes('adicion')) {
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+  if (act.includes('exclu') || act.includes('delet') || act.includes('remov')) {
+    return 'bg-red-50 text-red-700 border-red-200';
+  }
+  if (act.includes('senha') || act.includes('seguran')) {
+    return 'bg-purple-50 text-purple-700 border-purple-200';
+  }
+  return 'bg-sky-50 text-sky-800 border-sky-200';
+};
+
 const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
+  // === 1. DECLARAÇÃO RIGOROSA DE TODOS OS HOOKS NO TOPO ABSOLUTO ===
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>('logs');
 
@@ -118,8 +216,8 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Carrega logs ao abrir o modal ou mudar para a aba de logs
-  const loadLogs = async () => {
+  // Carrega logs com useCallback para manter referência estável
+  const loadLogs = React.useCallback(async () => {
     setIsLoadingLogs(true);
     setLogsError(null);
     try {
@@ -132,8 +230,9 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     } finally {
       setIsLoadingLogs(false);
     }
-  };
+  }, []);
 
+  // Dispara busca de logs ao abrir modal ou alternar para a aba de logs
   useEffect(() => {
     if (isOpen) {
       setPasswordFeedback(null);
@@ -141,143 +240,10 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
         loadLogs();
       }
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, loadLogs]);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordFeedback(null);
-
-    if (newPassword.length < 8) {
-      setPasswordFeedback({
-        type: 'error',
-        message: 'A nova senha deve possuir pelo menos 8 caracteres.',
-      });
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordFeedback({
-        type: 'error',
-        message: 'A confirmação de nova senha não confere.',
-      });
-      return;
-    }
-
-    setIsSavingPassword(true);
-
-    try {
-      await changeAdminPassword(currentPassword, newPassword, confirmPassword);
-      setPasswordFeedback({
-        type: 'success',
-        message: 'Senha atualizada com sucesso no PocketBase!',
-      });
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      // Fecha o modal após breve feedback de sucesso
-      setTimeout(() => {
-        onClose();
-      }, 1800);
-    } catch (err: any) {
-      setPasswordFeedback({
-        type: 'error',
-        message: err?.message || 'Falha ao atualizar a senha. Verifique a senha atual.',
-      });
-    } finally {
-      setIsSavingPassword(false);
-    }
-  };
-
-  const formatLogDate = (dateStr?: any) => {
-    if (!dateStr || typeof dateStr !== 'string' || dateStr.trim() === '') {
-      return { date: 'Recente', time: '--:--' };
-    }
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) {
-        return { date: 'Recente', time: '--:--' };
-      }
-      return {
-        date: date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
-        time: date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-      };
-    } catch {
-      return { date: 'Recente', time: '--:--' };
-    }
-  };
-
-  const getSectionMeta = (section?: string | null) => {
-    const sec = (section ? String(section) : '').toLowerCase();
-    if (sec.includes('empreendimento') || sec.includes('imóvel') || sec.includes('imovel')) {
-      return {
-        label: 'Gestão de Empreendimentos',
-        iconType: 'layers',
-        className: 'bg-blue-50 text-blue-800 border-blue-200/80',
-      };
-    }
-    if (sec.includes('obra') || sec.includes('construção') || sec.includes('construcao')) {
-      return {
-        label: 'Evolução das Obras',
-        iconType: 'hammer',
-        className: 'bg-amber-50 text-amber-800 border-amber-200/80',
-      };
-    }
-    if (sec.includes('banner') || sec.includes('hero') || sec.includes('história')) {
-      return {
-        label: 'Banners Principais',
-        iconType: 'sliders',
-        className: 'bg-indigo-50 text-indigo-800 border-indigo-200/80',
-      };
-    }
-    if (sec.includes('campanha') || sec.includes('pop') || sec.includes('popup')) {
-      return {
-        label: 'Campanhas & Pop-up',
-        iconType: 'megaphone',
-        className: 'bg-rose-50 text-rose-800 border-rose-200/80',
-      };
-    }
-    if (sec.includes('senha') || sec.includes('seguran') || sec.includes('acesso')) {
-      return {
-        label: 'Segurança & Acesso',
-        iconType: 'key',
-        className: 'bg-purple-50 text-purple-800 border-purple-200/80',
-      };
-    }
-    return {
-      label: section ? String(section) : 'Painel Geral',
-      iconType: 'shield',
-      className: 'bg-gray-100 text-gray-800 border-gray-200',
-    };
-  };
-
-  const renderSectionIcon = (iconType?: string) => {
-    switch (iconType) {
-      case 'layers': return <Layers size={13} className="shrink-0" />;
-      case 'hammer': return <Hammer size={13} className="shrink-0" />;
-      case 'sliders': return <Sliders size={13} className="shrink-0" />;
-      case 'megaphone': return <Megaphone size={13} className="shrink-0" />;
-      case 'key': return <KeyRound size={13} className="shrink-0" />;
-      default: return <ShieldCheck size={13} className="shrink-0" />;
-    }
-  };
-
-  const getActionBadgeColor = (action?: string | null) => {
-    const act = (action ? String(action) : '').toLowerCase();
-    if (act.includes('cria') || act.includes('cadastr') || act.includes('adicion')) {
-      return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    }
-    if (act.includes('exclu') || act.includes('delet') || act.includes('remov')) {
-      return 'bg-red-50 text-red-700 border-red-200';
-    }
-    if (act.includes('senha') || act.includes('seguran')) {
-      return 'bg-purple-50 text-purple-700 border-purple-200';
-    }
-    return 'bg-sky-50 text-sky-800 border-sky-200';
-  };
-
+  // Filtro de logs com useMemo garantido em todo ciclo de renderização
   const safeLogs = Array.isArray(logs) ? logs : [];
-
-  // Filtro de logs por seção e pesquisa textual
   const filteredLogs = useMemo(() => {
     try {
       const q = (searchQuery || '').toLowerCase().trim();
@@ -310,7 +276,53 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   }, [safeLogs, selectedSectionFilter, searchQuery]);
 
+  // === 2. VERIFICAÇÃO DE VISIBILIDADE ESTRITAMENTE APÓS TODOS OS HOOKS ===
   if (!isOpen) return null;
+
+  // === 3. HANDLERS E FUNÇÕES DE EVENTO ===
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordFeedback(null);
+
+    if (newPassword.length < 8) {
+      setPasswordFeedback({
+        type: 'error',
+        message: 'A nova senha deve possuir pelo menos 8 caracteres.',
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordFeedback({
+        type: 'error',
+        message: 'A confirmação de nova senha não confere.',
+      });
+      return;
+    }
+
+    setIsSavingPassword(true);
+
+    try {
+      await changeAdminPassword(currentPassword, newPassword, confirmPassword);
+      setPasswordFeedback({
+        type: 'success',
+        message: 'Senha atualizada com sucesso no PocketBase!',
+      });
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setTimeout(() => {
+        onClose();
+      }, 1800);
+    } catch (err: any) {
+      setPasswordFeedback({
+        type: 'error',
+        message: err?.message || 'Falha ao atualizar a senha. Verifique a senha atual.',
+      });
+    } finally {
+      setIsSavingPassword(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">

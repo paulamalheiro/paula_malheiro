@@ -128,6 +128,7 @@ const Hero = () => {
   const heroBtnText = heroBanner.button_text || 'Conheça os Empreendimentos';
   const heroBtnLink = heroBanner.button_link || '#projects';
   const heroImage = heroBanner.image_path || '/paula-hero.jpeg';
+  const heroTitle = heroBanner.title || 'a compra do seu imóvel como uma experiência segura e transparente!';
 
   return (
     <section id="home" className="relative pt-12 pb-24 overflow-hidden">
@@ -140,17 +141,37 @@ const Hero = () => {
         >
           <div className="space-y-4">
             <span className="text-xs font-bold text-accent uppercase tracking-[0.3em]">{heroTag}</span>
-            <h1 className="flex flex-col">
-              <span className="text-2xl md:text-3xl font-sans text-gray-500 uppercase tracking-[0.2em] mb-2">
-                a compra do seu
-              </span>
-              <span className="text-7xl md:text-9xl font-sans font-black text-primary leading-none mb-4 tracking-tight">
-                imóvel
-              </span>
-              <span className="text-lg md:text-xl font-sans text-gray-600 leading-relaxed italic">
-                como uma experiência segura e transparente!
-              </span>
-            </h1>
+            {(() => {
+              const raw = heroTitle.trim();
+              const match = raw.match(/^(.*?)(im[óo]vel)(.*)$/i);
+              if (match) {
+                const prefix = match[1]?.trim() || 'a compra do seu';
+                const highlight = match[2] || 'imóvel';
+                const suffix = match[3]?.trim() || 'como uma experiência segura e transparente!';
+                return (
+                  <h1 className="flex flex-col">
+                    {prefix && (
+                      <span className="text-2xl md:text-3xl font-sans text-gray-500 uppercase tracking-[0.2em] mb-2">
+                        {prefix}
+                      </span>
+                    )}
+                    <span className="text-7xl md:text-9xl font-sans font-black text-primary leading-none mb-4 tracking-tight">
+                      {highlight}
+                    </span>
+                    {suffix && (
+                      <span className="text-lg md:text-xl font-sans text-gray-600 leading-relaxed italic">
+                        {suffix}
+                      </span>
+                    )}
+                  </h1>
+                );
+              }
+              return (
+                <h1 className="text-4xl sm:text-6xl md:text-7xl font-sans font-black text-primary leading-tight mb-4 tracking-tight">
+                  {raw}
+                </h1>
+              );
+            })()}
           </div>
           <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
             {heroSubtitle}
@@ -317,15 +338,18 @@ const Benefits = () => {
   const { getBanner } = useBanners();
   const investBanner = getBanner('investment');
   const investImage = investBanner.image_path || '/velli.jpeg';
+  const investTag = investBanner.tag || 'Por Que Investir na Planta?';
+  const investTitle = investBanner.title || 'Segurança, Rentabilidade e Conquista Patrimonial';
   const investQuote = investBanner.subtitle || 'Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.';
+  const investAuthor = investBanner.button_text || 'Paula Malheiro';
 
   return (
     <section className="py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-2 gap-16 items-center">
         <div className="space-y-8">
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">Por Que Investir na Planta?</span>
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">{investTag}</span>
           <h2 className="text-4xl md:text-5xl font-sans text-primary font-bold leading-tight">
-            Segurança, Rentabilidade e Conquista Patrimonial
+            {investTitle}
           </h2>
           
           <div className="space-y-6">
@@ -360,7 +384,7 @@ const Benefits = () => {
                 <SmartImage src={investImage} alt="Paula Malheiro" className="w-full h-full object-cover" />
               </div>
               <div>
-                <span className="block font-bold text-primary text-sm leading-none">Paula Malheiro</span>
+                <span className="block font-bold text-primary text-sm leading-none">{investAuthor}</span>
                 <span className="text-[10px] text-gray-400 uppercase font-bold mt-1">Corretora de Imóveis</span>
               </div>
             </div>
@@ -587,6 +611,35 @@ const About = () => {
   const { getBanner } = useBanners();
   const aboutBanner = getBanner('about');
   const aboutImage = aboutBanner.image_path || '/paula-perfil.jpeg';
+  const aboutTag = aboutBanner.tag?.trim() || 'Minha História';
+  const aboutSignature = aboutBanner.title?.trim() || 'Paula Malheiro – CRECI 21.188';
+
+  const defaultStory = [
+    'Sou natural de Caetité – Bahia, e cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.',
+    'Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente.',
+    'Gosto muito de desafios, de inovar, sou criativa e adoro marketing. Já atuei também na coordenação comercial, e entre inspirar e utilizar minha experiência como bússola, percebi que gosto da liberdade de estar presente e gerir meu próprio negócio ajudando os meus clientes a tomarem a decisão certa, sempre pautado em muita transparência.',
+    'Nesses 10 anos de profissão, pude testemunhar vários exemplos de sucesso e retorno financeiros dos clientes que compraram imóveis na planta. Hoje, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.'
+  ];
+
+  const paragraphs = React.useMemo(() => {
+    if (aboutBanner.subtitle && aboutBanner.subtitle.trim()) {
+      const parsed = aboutBanner.subtitle
+        .split('\n')
+        .map(p => p.trim())
+        .filter(p => p.length > 0);
+
+      // Se o último parágrafo for a assinatura (ex: "Paula Malheiro – CRECI 21.188"), remove do loop para não duplicar com o destaque final
+      if (
+        parsed.length > 1 && 
+        parsed[parsed.length - 1].toLowerCase().includes('creci') && 
+        aboutSignature.toLowerCase().includes('creci')
+      ) {
+        return parsed.slice(0, -1);
+      }
+      if (parsed.length > 0) return parsed;
+    }
+    return defaultStory;
+  }, [aboutBanner.subtitle, aboutSignature]);
 
   return (
     <section id="about" className="py-24 bg-white">
@@ -609,22 +662,13 @@ const About = () => {
           viewport={{ once: true }}
           className="space-y-6"
         >
-          <span className="text-xs font-bold text-accent uppercase tracking-widest">Minha História</span>
+          <span className="text-xs font-bold text-accent uppercase tracking-widest">{aboutTag}</span>
           <div className="space-y-4 text-gray-600 leading-relaxed">
-            <p>
-              Sou natural de Caetité – Bahia, e cheguei em Vitória da Conquista no ano de 2012 onde finalizei a faculdade de Direito e comecei a trabalhar na área. Mas as vendas sempre me acompanharam, e desde pequena via meu pai falar sobre imóveis já que ele é um fanático por negócios e sempre me inspirava de que não há nada mais concreto e lucrativo.
-            </p>
-            <p>
-              Em 2016 ingressei no ramo de Corretagem de Imóveis e desde sempre meu interesse foi por lançamentos imobiliários. Iniciei como Corretora no Alphaville onde aprendi sobre o poder de confiar no que se vende, e a não ter vergonha do trabalho. Em seguida, trabalhei na Gráfico Construtora e Incorporadora, período de muitas experiencias e que me fez ter certeza de estar no ramo certo. E em 2018 fui convidada para trabalhar na VCA Construtora, responsável pela maior parte do meu desenvolvimento como ser humano e profissional, me provando o quanto sou determinada e resiliente. 
-            </p>
-            <p>
-              Gosto muito de desafios, de inovar, sou criativa e adoro marketing. Já atuei também na coordenação comercial, e entre inspirar e utilizar minha experiência como bússola, percebi que gosto da liberdade de estar presente e gerir meu próprio negócio ajudando os meus clientes a tomarem a decisão certa, sempre pautado em muita transparência.
-            </p>
-            <p>
-              Nesses 10 anos de profissão, pude testemunhar vários exemplos de sucesso e retorno financeiros dos clientes que compraram imóveis na planta. Hoje, vivo um novo momento com mais maturidade e prezo por um bom atendimento humano e personalizado, a fim de contribuir numa vida mais feliz e próspera a quem me procura para ajudar na compra do seu imóvel.
-            </p>
+            {paragraphs.map((p, idx) => (
+              <p key={idx}>{p}</p>
+            ))}
             <p className="font-bold text-primary pt-4">
-              Paula Malheiro – CRECI 21.188
+              {aboutSignature}
             </p>
           </div>
           <div className="pt-6 space-y-4">
@@ -645,6 +689,10 @@ const About = () => {
 
 const Progress = () => {
   const { constructionProperties, loading } = useProperties();
+  const { getBanner } = useBanners();
+  const constrBanner = getBanner('construction');
+  const constrTitle = constrBanner.title || 'Evolução das Obras';
+  const constrSubtitle = constrBanner.subtitle || 'Confira o acompanhamento real de cada etapa dos nossos empreendimentos.';
   const [activeGallery, setActiveGallery] = useState<string[] | null>(null);
   const [activeVideos, setActiveVideos] = useState<string[] | null>(null);
   const [selectedVideoIdx, setSelectedVideoIdx] = useState<number>(0);
@@ -682,8 +730,8 @@ const Progress = () => {
     <section id="construction" className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-4">
         <div className="mb-16 text-center">
-          <h2 className="text-4xl font-sans text-primary font-bold mb-4">Evolução das Obras</h2>
-          <p className="text-gray-600">Confira o acompanhamento real de cada etapa dos nossos empreendimentos.</p>
+          <h2 className="text-4xl font-sans text-primary font-bold mb-4">{constrTitle}</h2>
+          <p className="text-gray-600">{constrSubtitle}</p>
         </div>
 
         <div className="flex justify-center mb-12">

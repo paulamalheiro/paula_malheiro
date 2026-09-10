@@ -435,46 +435,99 @@ export const AdminDashboard: React.FC = () => {
                             Textos & Chamadas
                           </h4>
 
-                          {activeSection === 'hero' && (
-                            <div>
-                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                                Tag / Etiqueta Superior
-                              </label>
-                              <input
-                                type="text"
-                                value={formData.tag || ''}
-                                onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
-                                placeholder="Ex: Especialista em Imóveis na Planta"
-                                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                              />
-                            </div>
-                          )}
-
+                          {/* Tag Superior (Hero, About, Investment) */}
                           <div>
                             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                              Título / Chamada Principal
+                              {activeSection === 'about'
+                                ? 'Etiqueta / Tag da Seção'
+                                : activeSection === 'investment'
+                                ? 'Etiqueta do Bloco'
+                                : 'Tag / Etiqueta Superior'}
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.tag || ''}
+                              onChange={(e) => setFormData({ ...formData, tag: e.target.value })}
+                              placeholder={
+                                activeSection === 'about'
+                                  ? 'Ex: Minha História'
+                                  : activeSection === 'investment'
+                                  ? 'Ex: Por Que Investir na Planta?'
+                                  : 'Ex: Especialista em Imóveis na Planta'
+                              }
+                              className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                            />
+                          </div>
+
+                          {/* Título Principal */}
+                          <div>
+                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                              {activeSection === 'about'
+                                ? 'Assinatura / Nome e Registro Profissional'
+                                : activeSection === 'investment'
+                                ? 'Título Principal do Bloco'
+                                : 'Título / Chamada Principal'}
                             </label>
                             <input
                               type="text"
                               value={formData.title || ''}
                               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                              placeholder="Título exibido na seção"
+                              placeholder={
+                                activeSection === 'about'
+                                  ? 'Ex: Paula Malheiro – CRECI 21.188'
+                                  : activeSection === 'investment'
+                                  ? 'Ex: Segurança, Rentabilidade e Conquista Patrimonial'
+                                  : 'Ex: a compra do seu imóvel como uma experiência segura e transparente!'
+                              }
                               className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                             />
                           </div>
 
+                          {/* Subtítulo / Conteúdo de Texto */}
                           <div>
-                            <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-                              Subtítulo / Descrição Auxiliar
-                            </label>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                {activeSection === 'about'
+                                  ? 'História / Biografia Completa (Múltiplos Parágrafos)'
+                                  : activeSection === 'investment'
+                                  ? 'Frase de Impacto / Citação'
+                                  : 'Subtítulo / Descrição Auxiliar'}
+                              </label>
+                              {activeSection === 'about' && (
+                                <span className="text-[11px] text-primary font-bold">
+                                  Dica: Pressione Enter para criar novos parágrafos
+                                </span>
+                              )}
+                            </div>
                             <textarea
-                              rows={3}
+                              rows={activeSection === 'about' ? 10 : activeSection === 'investment' ? 4 : 3}
                               value={formData.subtitle || ''}
                               onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
-                              placeholder="Texto descritivo ou de apoio"
+                              placeholder={
+                                activeSection === 'about'
+                                  ? 'Escreva aqui sua história completa e trajetória profissional...'
+                                  : activeSection === 'investment'
+                                  ? 'Ex: Investir em imóveis na planta é a forma mais inteligente de construir patrimônio sólido com segurança e planejamento.'
+                                  : 'Texto descritivo ou de apoio'
+                              }
                               className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none resize-y"
                             />
                           </div>
+
+                          {activeSection === 'investment' && (
+                            <div>
+                              <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                                Autor da Citação
+                              </label>
+                              <input
+                                type="text"
+                                value={formData.button_text || ''}
+                                onChange={(e) => setFormData({ ...formData, button_text: e.target.value })}
+                                placeholder="Ex: Paula Malheiro"
+                                className="w-full p-3.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                              />
+                            </div>
+                          )}
 
                           {activeSection === 'hero' && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

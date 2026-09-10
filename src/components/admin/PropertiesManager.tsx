@@ -228,7 +228,7 @@ export const PropertiesManager: React.FC = () => {
   const handleAddPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
-    const filesArray = Array.from(e.target.files);
+    const filesArray: File[] = Array.from(e.target.files);
     const validImages = filesArray.filter((f) => f.type.startsWith('image/'));
 
     if (validImages.length === 0) {
