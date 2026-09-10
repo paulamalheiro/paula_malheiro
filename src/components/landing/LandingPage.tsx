@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -12,13 +12,16 @@ import {
   TrendingUp, 
   ShieldCheck, 
   Wallet, 
-  Clock,
-  Lock,
-  Images,
-  ExternalLink,
-  Film,
-  Video,
-  Play
+  Clock, 
+  Lock, 
+  Images, 
+  ExternalLink, 
+  Film, 
+  Video, 
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  Hammer
 } from 'lucide-react';
 import { getImageUrl } from '../../lib/supabase';
 import { useBanners } from '../../hooks/useBanners';
@@ -244,9 +247,16 @@ const Hero = () => {
   );
 };
 
-const ProjectCard = ({ project, idx }: { project: Property; idx: number; key?: React.Key }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
+const ProjectCard = ({ 
+  project, 
+  idx, 
+  onSelect 
+}: { 
+  project: Property; 
+  idx: number; 
+  onSelect: () => void;
+  key?: React.Key 
+}) => {
   const whatsappMessage = `Olá Paula! Gostaria de mais informações sobre o empreendimento *${project.title}* (${project.location}).`;
 
   return (
@@ -255,62 +265,59 @@ const ProjectCard = ({ project, idx }: { project: Property; idx: number; key?: R
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: idx * 0.1 }}
-      onClick={() => setIsExpanded(!isExpanded)}
-      onMouseEnter={() => setIsExpanded(true)}
-      onMouseLeave={() => setIsExpanded(false)}
-      className={`group cursor-pointer bg-white rounded-2xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-500 flex flex-col ${isExpanded ? 'md:col-span-2 lg:col-span-1' : ''}`}
+      onClick={onSelect}
+      className="group cursor-pointer bg-white rounded-3xl overflow-hidden shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col border border-gray-100/80 hover:-translate-y-1"
     >
-      <div className="relative aspect-[3/4] overflow-hidden shrink-0 bg-gray-100">
+      <div className="relative aspect-[4/3] sm:aspect-[3/4] overflow-hidden shrink-0 bg-gray-100">
         <SmartImage 
           src={project.image_url} 
           alt={project.title} 
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
         />
         {project.tag && (
-          <div className="absolute top-4 left-4 bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md">
+          <div className="absolute top-4 left-4 bg-accent text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-md uppercase tracking-wider">
             {project.tag}
+          </div>
+        )}
+        {project.gallery_images && project.gallery_images.length > 1 && (
+          <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1">
+            <Images size={12} />
+            <span>{project.gallery_images.length} fotos</span>
           </div>
         )}
       </div>
 
       <div className="p-6 flex flex-col flex-1">
         <div className="space-y-3 mb-4">
-          <h3 className="text-xl font-sans text-primary font-bold">{project.title}</h3>
-          <div className="flex items-center gap-1 text-gray-500 text-sm">
-            <MapPin size={14} className="text-primary shrink-0" /> {project.location}
+          <h3 className="text-xl font-sans text-primary font-bold group-hover:text-accent transition-colors">
+            {project.title}
+          </h3>
+          <div className="flex items-center gap-1.5 text-gray-500 text-xs">
+            <MapPin size={14} className="text-primary shrink-0" />
+            <span>{project.location}</span>
           </div>
 
           {project.description && (
-            <div className={`text-sm text-gray-600 leading-relaxed transition-all duration-500 overflow-hidden ${isExpanded ? 'max-h-[1000px] opacity-100' : 'max-h-20 opacity-80'}`}>
-              <div className="whitespace-pre-line">
-                {project.description}
-              </div>
-            </div>
-          )}
-
-          {project.description && project.description.length > 100 && (
-            <button 
-              type="button"
-              className="text-xs font-bold text-primary/60 hover:text-primary transition-colors uppercase tracking-widest cursor-pointer"
-            >
-              {isExpanded ? 'Ver menos' : 'Ver mais detalhes'}
-            </button>
+            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed line-clamp-3">
+              {project.description}
+            </p>
           )}
         </div>
 
-        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between">
-          <div>
-            <span className="block text-[10px] text-gray-400 uppercase font-bold">Status</span>
-            <span className="font-bold text-primary text-sm">{project.tag || 'Disponível'}</span>
-          </div>
+        <div className="mt-auto pt-4 border-t border-gray-100 flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-primary flex items-center gap-1 group-hover:gap-2 transition-all">
+            Ver Perfil Completo <ArrowRight size={14} />
+          </span>
+
           <a 
             href={`https://wa.me/5577991465337?text=${encodeURIComponent(whatsappMessage)}`}
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-primary font-bold text-sm flex items-center gap-1 group-hover:gap-2 transition-all hover:text-accent"
+            className="w-9 h-9 rounded-full bg-[#25D366] text-white flex items-center justify-center hover:scale-110 shadow-sm transition-all shrink-0"
+            title="Atendimento no WhatsApp"
           >
-            Saiba Mais <ArrowRight size={16} />
+            <WhatsAppIcon size={18} />
           </a>
         </div>
       </div>
@@ -318,8 +325,192 @@ const ProjectCard = ({ project, idx }: { project: Property; idx: number; key?: R
   );
 };
 
+const PropertyDetailModal = ({
+  property,
+  onClose
+}: {
+  property: Property;
+  onClose: () => void;
+}) => {
+  const photos = useMemo(() => {
+    const list = Array.isArray(property.gallery_images) ? [...property.gallery_images] : [];
+    if (property.image_url && !list.includes(property.image_url)) {
+      list.unshift(property.image_url);
+    }
+    return list.length > 0 ? list : [property.image_url || '/velli.jpeg'];
+  }, [property]);
+
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowLeft') setActiveIdx(p => (p > 0 ? p - 1 : photos.length - 1));
+      if (e.key === 'ArrowRight') setActiveIdx(p => (p < photos.length - 1 ? p + 1 : 0));
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [photos, onClose]);
+
+  const whatsappMessage = `Olá Paula! Gostaria de atendimento personalizado sobre o empreendimento *${property.title}* (${property.location}).`;
+
+  return (
+    <div 
+      className="fixed inset-0 z-[105] bg-black/75 flex items-center justify-center p-3 sm:p-6 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-3xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-gray-100 overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100">
+          <div className="flex items-center gap-3 flex-wrap">
+            {property.tag && (
+              <span className="text-[11px] font-bold text-accent bg-accent/10 px-3 py-1 rounded-full uppercase tracking-wider">
+                {property.tag}
+              </span>
+            )}
+            <h3 className="text-xl sm:text-2xl font-sans text-primary font-bold">
+              {property.title}
+            </h3>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors cursor-pointer"
+            title="Fechar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Modal Body: 2 Columns on Desktop */}
+        <div className="p-5 sm:p-8 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1">
+          {/* Coluna 1: Galeria de Fotos com Seletor & Miniaturas */}
+          <div className="lg:col-span-7 flex flex-col space-y-3">
+            {/* Foto Principal com Setas */}
+            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-900 border border-gray-200 shadow-md">
+              <SmartImage
+                src={photos[activeIdx]}
+                alt={`${property.title} - Foto ${activeIdx + 1}`}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-3 left-3 bg-black/60 text-white text-xs font-mono font-bold px-2.5 py-1 rounded-md backdrop-blur-xs">
+                Foto {activeIdx + 1} de {photos.length}
+              </span>
+
+              {photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx(p => (p > 0 ? p - 1 : photos.length - 1))}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
+                    title="Foto anterior (Seta esquerda)"
+                  >
+                    <ChevronLeft size={22} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveIdx(p => (p < photos.length - 1 ? p + 1 : 0))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all cursor-pointer shadow-lg hover:scale-105"
+                    title="Próxima foto (Seta direita)"
+                  >
+                    <ChevronRight size={22} />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Faixa de Miniaturas */}
+            {photos.length > 1 && (
+              <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-thin">
+                {photos.map((img, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setActiveIdx(i)}
+                    className={`relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer ${
+                      activeIdx === i
+                        ? 'border-primary ring-2 ring-primary/20 scale-105 shadow-md'
+                        : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-300'
+                    }`}
+                  >
+                    <SmartImage src={img} alt={`Miniatura ${i + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Coluna 2: Informações Comerciais & Ações */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-1.5 text-gray-600 text-sm font-medium">
+                <MapPin size={18} className="text-primary shrink-0" />
+                <span>{property.location}</span>
+              </div>
+
+              {property.description ? (
+                <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line space-y-2 bg-gray-50/70 p-4 rounded-2xl border border-gray-100 max-h-[260px] overflow-y-auto">
+                  {property.description}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500 italic bg-gray-50/70 p-4 rounded-2xl">
+                  Consulte-nos para receber a apresentação completa, plantas e tabela de preços deste lançamento.
+                </p>
+              )}
+
+              {/* Badge / Atalho caso o empreendimento participe da Evolução das Obras */}
+              {property.is_construction && (
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-300/40 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-amber-900 font-bold">
+                    <Hammer size={16} className="text-amber-600 shrink-0" />
+                    <span>Em Acompanhamento de Obras</span>
+                  </div>
+                  <a
+                    href="#construction"
+                    onClick={onClose}
+                    className="text-xs font-bold text-amber-800 hover:text-amber-950 underline flex items-center gap-1 shrink-0 cursor-pointer"
+                  >
+                    Ver Obras <ArrowRight size={13} />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Botão de Ação WhatsApp */}
+            <div className="pt-4 border-t border-gray-100 space-y-2.5">
+              <a
+                href={`https://wa.me/5577991465337?text=${encodeURIComponent(whatsappMessage)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-3.5 px-6 rounded-2xl font-bold text-sm shadow-xl shadow-[#25D366]/25 transition-all flex items-center justify-center gap-2 hover:scale-[1.02] cursor-pointer"
+              >
+                <WhatsAppIcon size={20} />
+                <span>Quero Mais Informações no WhatsApp</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="w-full py-2 text-xs text-gray-400 hover:text-gray-600 font-medium transition-colors text-center cursor-pointer"
+              >
+                Voltar ao Catálogo
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const FeaturedProjects = () => {
   const { featuredProperties, loading } = useProperties();
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
 
   return (
     <section id="projects" className="py-24 bg-secondary/30">
@@ -344,11 +535,26 @@ const FeaturedProjects = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProperties.map((project, idx) => (
-              <ProjectCard key={project.id} project={project} idx={idx} />
+              <ProjectCard 
+                key={project.id} 
+                project={project} 
+                idx={idx} 
+                onSelect={() => setSelectedProperty(project)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {/* Modal de Perfil Completo do Imóvel */}
+      <AnimatePresence>
+        {selectedProperty && (
+          <PropertyDetailModal
+            property={selectedProperty}
+            onClose={() => setSelectedProperty(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
   );
 };
@@ -723,10 +929,26 @@ const Progress = () => {
   const constrTitle = constrBanner.title || 'Evolução das Obras';
   const constrSubtitle = constrBanner.subtitle || 'Confira o acompanhamento real de cada etapa dos nossos empreendimentos.';
   const [activeGallery, setActiveGallery] = useState<string[] | null>(null);
+  const [activePhotoIdx, setActivePhotoIdx] = useState<number>(0);
   const [activeVideos, setActiveVideos] = useState<string[] | null>(null);
   const [selectedVideoIdx, setSelectedVideoIdx] = useState<number>(0);
   const [showAguardem, setShowAguardem] = useState(false);
   const [selectedPropTitle, setSelectedPropTitle] = useState<string>('');
+
+  useEffect(() => {
+    if (!activeGallery || activeGallery.length === 0) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setActiveGallery(null);
+      } else if (e.key === 'ArrowLeft') {
+        setActivePhotoIdx(prev => (prev > 0 ? prev - 1 : activeGallery.length - 1));
+      } else if (e.key === 'ArrowRight') {
+        setActivePhotoIdx(prev => (prev < activeGallery.length - 1 ? prev + 1 : 0));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeGallery]);
 
   const handlePropertyClick = (prop: Property) => {
     // 1. Se for formato de vídeo e tiver vídeos cadastrados
@@ -746,6 +968,7 @@ const Progress = () => {
     // 3. Galeria de Fotos
     if ((prop.action_type === 'gallery' || prop.media_type === 'photos') && prop.gallery_images && prop.gallery_images.length > 0) {
       setActiveGallery(prop.gallery_images);
+      setActivePhotoIdx(0);
       setSelectedPropTitle(prop.title);
       return;
     }
@@ -889,38 +1112,107 @@ const Progress = () => {
         )}
       </AnimatePresence>
 
-      {/* Modal Galeria de Fotos */}
+      {/* Modal Galeria de Fotos com Seletor Visível & Miniaturas */}
       <AnimatePresence>
-        {activeGallery && (
+        {activeGallery && activeGallery.length > 0 && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] bg-black/95 flex flex-col items-center justify-center p-4"
+            className="fixed inset-0 z-[110] bg-black/95 flex flex-col items-center justify-between p-4 sm:p-6 select-none"
+            onClick={() => setActiveGallery(null)}
           >
-            <div className="w-full max-w-5xl flex items-center justify-between text-white pb-4">
-              <span className="text-lg font-bold">{selectedPropTitle} • Galeria de Obras</span>
-              <button 
-                onClick={() => setActiveGallery(null)}
-                className="text-white/70 hover:text-white transition-colors cursor-pointer"
-              >
-                <X size={32} />
-              </button>
+            {/* Header com título, contador de fotos e botão fechar */}
+            <div 
+              className="w-full max-w-5xl flex items-center justify-between text-white pb-3 border-b border-white/10"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-base sm:text-lg font-bold text-white tracking-wide">
+                  {selectedPropTitle} <span className="text-amber-400 font-normal">• Galeria de Obras</span>
+                </span>
+                <span className="hidden sm:inline-block px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-medium">
+                  Foto {activePhotoIdx + 1} de {activeGallery.length}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="sm:hidden px-2.5 py-0.5 rounded-full bg-white/10 text-white/80 text-xs font-medium">
+                  {activePhotoIdx + 1}/{activeGallery.length}
+                </span>
+                <button 
+                  onClick={() => setActiveGallery(null)}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  title="Fechar (Esc)"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             
-            <div className="w-full max-w-5xl overflow-x-auto flex gap-6 snap-x snap-mandatory pb-4 scrollbar-hide">
-              {activeGallery.map((img, i) => (
-                <SmartImage 
-                  key={i} 
-                  src={img} 
-                  alt={`Galeria ${i}`} 
-                  className="w-full max-h-[75vh] object-contain snap-center shrink-0 rounded-2xl bg-black/50"
-                />
-              ))}
+            {/* Imagem Principal em Destaque com Setas de Navegação */}
+            <div 
+              className="relative w-full max-w-5xl flex-1 flex items-center justify-center py-4 my-auto min-h-0"
+              onClick={e => e.stopPropagation()}
+            >
+              <SmartImage 
+                key={activePhotoIdx}
+                src={activeGallery[activePhotoIdx]} 
+                alt={`Obra ${selectedPropTitle} foto ${activePhotoIdx + 1}`} 
+                className="max-h-[60vh] sm:max-h-[68vh] max-w-full object-contain rounded-2xl shadow-2xl transition-all"
+              />
+
+              {activeGallery.length > 1 && (
+                <>
+                  <button 
+                    onClick={() => setActivePhotoIdx(prev => (prev > 0 ? prev - 1 : activeGallery.length - 1))}
+                    className="absolute left-1 sm:left-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all shadow-xl backdrop-blur-xs cursor-pointer border border-white/20 hover:scale-105 active:scale-95"
+                    title="Foto anterior (Seta para a esquerda)"
+                  >
+                    <ChevronLeft size={26} />
+                  </button>
+                  <button 
+                    onClick={() => setActivePhotoIdx(prev => (prev < activeGallery.length - 1 ? prev + 1 : 0))}
+                    className="absolute right-1 sm:right-4 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all shadow-xl backdrop-blur-xs cursor-pointer border border-white/20 hover:scale-105 active:scale-95"
+                    title="Próxima foto (Seta para a direita)"
+                  >
+                    <ChevronRight size={26} />
+                  </button>
+                </>
+              )}
             </div>
-            <div className="text-center text-white/50 text-xs mt-2">
-              Deslize lateralmente para ver mais fotos
-            </div>
+
+            {/* Faixa de Miniaturas Clicáveis (Thumbnails) */}
+            {activeGallery.length > 1 && (
+              <div 
+                className="w-full max-w-5xl flex flex-col items-center gap-2 pt-2 border-t border-white/10"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto max-w-full py-1.5 px-2 scrollbar-thin">
+                  {activeGallery.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActivePhotoIdx(i)}
+                      className={`relative shrink-0 w-16 h-12 sm:w-20 sm:h-14 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                        activePhotoIdx === i
+                          ? 'border-amber-400 scale-105 shadow-lg shadow-amber-400/20 opacity-100 ring-2 ring-amber-400/50'
+                          : 'border-white/20 opacity-50 hover:opacity-90'
+                      }`}
+                      title={`Ver foto ${i + 1}`}
+                    >
+                      <SmartImage 
+                        src={img} 
+                        alt={`Miniatura ${i + 1}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </button>
+                  ))}
+                </div>
+                <span className="text-[11px] text-white/50 tracking-wide">
+                  Use as setas do teclado (← / →) ou selecione uma miniatura acima
+                </span>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
