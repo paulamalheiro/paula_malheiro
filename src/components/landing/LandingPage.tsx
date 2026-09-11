@@ -1054,7 +1054,7 @@ const Progress = () => {
             ) : (
               <span className="flex items-center gap-2 text-gray-600">
                 <Lock size={15} className="text-primary shrink-0" />
-                Acesso exclusivo para clientes cadastrados (identificação por CPF)
+                Acesso exclusivo para clientes
               </span>
             )}
           </div>
