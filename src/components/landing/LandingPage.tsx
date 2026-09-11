@@ -21,9 +21,12 @@ import {
   Play,
   ChevronLeft,
   ChevronRight,
-  Hammer
+  Hammer,
+  UserCheck,
+  ShieldAlert,
+  LogOut
 } from 'lucide-react';
-import { getImageUrl } from '../../lib/supabase';
+import { getImageUrl, verifyClientCpf, formatCpf } from '../../lib/supabase';
 import { useBanners } from '../../hooks/useBanners';
 import { useProperties } from '../../hooks/useProperties';
 import { SmartImage } from '../common/SmartImage';
@@ -935,6 +938,21 @@ const Progress = () => {
   const [showAguardem, setShowAguardem] = useState(false);
   const [selectedPropTitle, setSelectedPropTitle] = useState<string>('');
 
+  // Portão de Acesso por CPF
+  const [showCpfModal, setShowCpfModal] = useState(false);
+  const [cpfInput, setCpfInput] = useState('');
+  const [cpfError, setCpfError] = useState<string | null>(null);
+  const [isVerifyingCpf, setIsVerifyingCpf] = useState(false);
+  const [pendingProperty, setPendingProperty] = useState<Property | null>(null);
+  const [authenticatedClient, setAuthenticatedClient] = useState<{ name: string; cpf: string } | null>(() => {
+    try {
+      const stored = sessionStorage.getItem('paula_client_auth');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  });
+
   useEffect(() => {
     if (!activeGallery || activeGallery.length === 0) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -950,7 +968,7 @@ const Progress = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activeGallery]);
 
-  const handlePropertyClick = (prop: Property) => {
+  const openPropertyMedia = (prop: Property) => {
     // 1. Se for formato de vídeo e tiver vídeos cadastrados
     if (prop.media_type === 'videos' && prop.gallery_videos && prop.gallery_videos.length > 0) {
       setActiveVideos(prop.gallery_videos);
@@ -978,18 +996,80 @@ const Progress = () => {
     setShowAguardem(true);
   };
 
+  const handlePropertyClick = (prop: Property) => {
+    if (!authenticatedClient) {
+      setPendingProperty(prop);
+      setCpfInput('');
+      setCpfError(null);
+      setShowCpfModal(true);
+      return;
+    }
+    openPropertyMedia(prop);
+  };
+
+  const handleVerifyCpf = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isVerifyingCpf) return;
+
+    setIsVerifyingCpf(true);
+    setCpfError(null);
+
+    try {
+      const res = await verifyClientCpf(cpfInput);
+      if (res.valid && res.client) {
+        const clientData = { name: res.client.name, cpf: res.client.cpf };
+        setAuthenticatedClient(clientData);
+        sessionStorage.setItem('paula_client_auth', JSON.stringify(clientData));
+        setShowCpfModal(false);
+        if (pendingProperty) {
+          openPropertyMedia(pendingProperty);
+          setPendingProperty(null);
+        }
+      } else {
+        setCpfError(res.error || 'usuário não localizado, entre em contato e solicite seu acesso');
+      }
+    } catch (err: any) {
+      setCpfError(err.message || 'usuário não localizado, entre em contato e solicite seu acesso');
+    } finally {
+      setIsVerifyingCpf(false);
+    }
+  };
+
   return (
     <section id="construction" className="py-24 bg-white relative">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="mb-16 text-center">
+        <div className="mb-12 text-center">
           <h2 className="text-4xl font-sans text-primary font-bold mb-4">{constrTitle}</h2>
           <p className="text-gray-600">{constrSubtitle}</p>
         </div>
 
-        <div className="flex justify-center mb-12">
-          <p className="text-sm text-gray-500 font-medium uppercase tracking-widest text-center">
-            Clique no empreendimento que deseja acompanhar
-          </p>
+        {/* Status de Acesso / Identificação */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mb-10 px-5 py-3.5 bg-secondary/20 rounded-2xl max-w-2xl mx-auto border border-gray-100 shadow-xs">
+          <div className="flex items-center gap-2.5 text-xs font-medium">
+            {authenticatedClient ? (
+              <span className="flex items-center gap-2 text-emerald-800 font-bold">
+                <UserCheck size={16} className="text-emerald-600" />
+                Acesso Liberado: {authenticatedClient.name} ({authenticatedClient.cpf})
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 text-gray-600">
+                <Lock size={15} className="text-primary shrink-0" />
+                Acesso exclusivo para clientes cadastrados (identificação por CPF)
+              </span>
+            )}
+          </div>
+          {authenticatedClient && (
+            <button
+              onClick={() => {
+                sessionStorage.removeItem('paula_client_auth');
+                setAuthenticatedClient(null);
+              }}
+              className="text-xs text-gray-400 hover:text-rose-600 flex items-center gap-1 font-semibold transition-colors cursor-pointer"
+              title="Trocar CPF / Sair"
+            >
+              <LogOut size={13} /> Sair
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -1247,6 +1327,122 @@ const Progress = () => {
               >
                 Entendi
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal de Identificação por CPF (Portão de Acesso à Evolução das Obras) */}
+      <AnimatePresence>
+        {showCpfModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[115] bg-black/75 flex items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => {
+              if (!isVerifyingCpf) {
+                setShowCpfModal(false);
+                setPendingProperty(null);
+                setCpfError(null);
+              }
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-gray-100 relative"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => {
+                  setShowCpfModal(false);
+                  setPendingProperty(null);
+                  setCpfError(null);
+                }}
+                disabled={isVerifyingCpf}
+                className="absolute top-5 right-5 w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition-colors cursor-pointer"
+                title="Fechar"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="text-center space-y-3 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto shadow-inner">
+                  <Lock size={26} />
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold text-accent uppercase tracking-wider">
+                    Área do Cliente • Acesso Exclusivo
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-sans text-primary font-bold mt-1">
+                    Evolução das Obras
+                  </h3>
+                  {pendingProperty && (
+                    <p className="text-xs text-gray-500 mt-1 font-medium">
+                      Empreendimento: <strong className="text-gray-800">{pendingProperty.title}</strong>
+                    </p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 leading-relaxed">
+                  Informe o seu CPF cadastrado para visualizar fotos e vídeos do acompanhamento da sua obra.
+                </p>
+              </div>
+
+              <form onSubmit={handleVerifyCpf} className="space-y-4">
+                <div className="space-y-1.5 text-left">
+                  <label className="text-xs font-bold text-gray-700 ml-1">
+                    Seu CPF
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={14}
+                    placeholder="000.000.000-00"
+                    value={cpfInput}
+                    onChange={(e) => {
+                      setCpfInput(formatCpf(e.target.value));
+                      if (cpfError) setCpfError(null);
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-base font-mono tracking-wider focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-center"
+                    autoFocus
+                  />
+                </div>
+
+                {cpfError && (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-left space-y-3 animate-in fade-in">
+                    <div className="flex items-start gap-2.5 text-amber-900 text-xs font-medium leading-relaxed">
+                      <ShieldAlert size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                      <span>{cpfError}</span>
+                    </div>
+
+                    <a
+                      href={`https://wa.me/5577991465337?text=${encodeURIComponent(
+                        `Olá Paula! Gostaria de solicitar meu acesso à Evolução das Obras (CPF: ${cpfInput}).`
+                      )}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-2.5 px-4 rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <WhatsAppIcon size={16} />
+                      <span>Solicitar Acesso no WhatsApp</span>
+                    </a>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isVerifyingCpf || cpfInput.replace(/\D/g, '').length !== 11}
+                  className="w-full bg-primary hover:bg-accent text-white py-3.5 px-6 rounded-xl font-bold text-sm shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isVerifyingCpf ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <span>Acessar Galeria da Obra</span>
+                  )}
+                </button>
+              </form>
             </motion.div>
           </motion.div>
         )}

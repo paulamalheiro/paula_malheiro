@@ -24,7 +24,18 @@ export {
   logAuditEvent,
   fetchAuditLogs,
   changeAdminPassword,
+  fetchClientsFromDb,
+  saveClientToDb,
+  toggleClientStatusInDb,
+  deleteClientFromDb,
+  verifyClientCpf,
+  fetchAccessLogsFromDb,
+  recordAccessLog,
+  formatCpf,
+  cleanCpf,
   type AuditLog,
+  type Client,
+  type AccessLog,
 } from './pocketbase';
 
 export const BUCKET_NAME = 'uploads';

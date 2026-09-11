@@ -9,3 +9,4 @@ coverage/
 *.cjs
 test.png
 test2.jpeg
+.agents/

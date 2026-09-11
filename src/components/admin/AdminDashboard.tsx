@@ -13,7 +13,9 @@ import {
   Image as ImageIcon,
   Building2,
   Megaphone,
-  Settings
+  Settings,
+  Users,
+  Activity
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useBanners, DEFAULT_BANNERS } from '../../hooks/useBanners';
@@ -21,11 +23,13 @@ import { ImageUploader } from './ImageUploader';
 import { PropertiesManager } from './PropertiesManager';
 import { CampaignsManager } from './CampaignsManager';
 import { ConstructionProgressManager } from './ConstructionProgressManager';
+import { ClientsManager } from './ClientsManager';
+import { AccessLogsManager } from './AccessLogsManager';
 import { SettingsModal } from './SettingsModal';
 import { upsertBannerToDb, uploadBannerFile, logAuditEvent, BUCKET_NAME } from '../../lib/supabase';
 import type { Banner, SectionMeta } from '../../types/banner';
 
-type DashboardTab = 'banners' | 'properties' | 'campaigns';
+type DashboardTab = 'banners' | 'properties' | 'campaigns' | 'clients' | 'access_logs';
 
 const SECTIONS_CONFIG: Record<string, SectionMeta> = {
   hero: {
@@ -561,6 +565,28 @@ export const AdminDashboard: React.FC = () => {
           >
             <ImageIcon size={16} /> Banners Principais
           </button>
+
+          <button
+            onClick={() => setActiveTab('clients')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'clients'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Users size={16} /> Clientes
+          </button>
+
+          <button
+            onClick={() => setActiveTab('access_logs')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'access_logs'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            <Activity size={16} /> Logs de Acesso
+          </button>
         </div>
       </header>
 
@@ -600,16 +626,16 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    {Object.values(SECTIONS_CONFIG).map((section) => {
-                      const isSelected = activeSection === section.key;
+                    {Object.entries(SECTIONS_CONFIG).map(([key, section]) => {
+                      const isSelected = activeSection === key;
                       return (
                         <button
-                          key={section.key}
-                          onClick={() => setActiveSection(section.key)}
-                          className={`w-full text-left p-4 rounded-2xl transition-all border cursor-pointer flex flex-col gap-1 ${
+                          key={key}
+                          onClick={() => setActiveSection(key)}
+                          className={`w-full text-left p-3.5 rounded-2xl transition-all flex flex-col gap-1 cursor-pointer border ${
                             isSelected
-                              ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
-                              : 'bg-gray-50/70 hover:bg-gray-100 text-gray-700 border-transparent'
+                              ? 'bg-primary text-white shadow-md border-primary'
+                              : 'bg-gray-50/50 hover:bg-gray-100/80 text-gray-700 border-gray-200/50'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -660,6 +686,20 @@ export const AdminDashboard: React.FC = () => {
                 </section>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ABA 4: CLIENTES */}
+        {activeTab === 'clients' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm">
+            <ClientsManager />
+          </div>
+        )}
+
+        {/* ABA 5: LOGS DE ACESSO */}
+        {activeTab === 'access_logs' && (
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-200/80 shadow-sm">
+            <AccessLogsManager />
           </div>
         )}
       </main>

@@ -33,7 +33,7 @@ async function main() {
 
   // 2. Git stage
   console.log('\n[2/4] Preparando arquivos modificados para commit no Git...');
-  runCmd('git add .env.example package.json package-lock.json src/ scripts/ PROJECT_OVERVIEW.md', 'Git Add');
+  runCmd('git add .gitignore .env.example package.json package-lock.json src/ scripts/ PROJECT_OVERVIEW.md', 'Git Add');
 
   // 3. Commit
   const commitMsg = process.argv.slice(2).join(' ') || 'feat: migração completa do frontend para PocketBase no Coolify';

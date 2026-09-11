@@ -597,3 +597,358 @@ export const uploadBannerFile = async (
     );
   }
 };
+
+/* ==============================================================================
+   GESTÃO DE CLIENTES & LOGS DE ACESSO (EVOLUÇÃO DA OBRA)
+   ============================================================================== */
+
+export interface Client {
+  id: string;
+  name: string;
+  cpf: string;
+  active: boolean;
+  created?: string;
+  updated?: string;
+}
+
+export interface AccessLog {
+  id: string;
+  client_id?: string;
+  client_name: string;
+  cpf: string;
+  access_count: number;
+  last_access: string;
+  created?: string;
+}
+
+const LOCAL_STORAGE_CLIENTS_KEY = 'paula_clients_local_db';
+const LOCAL_STORAGE_ACCESS_LOGS_KEY = 'paula_access_logs_local_db';
+
+/** Formata string de CPF para 000.000.000-00 */
+export function formatCpf(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 11);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`;
+  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`;
+  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9, 11)}`;
+}
+
+/** Remove pontuações do CPF */
+export function cleanCpf(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+export const fetchClientsFromDb = async (): Promise<Client[]> => {
+  if (isPocketBaseConfigured) {
+    try {
+      const records = await pb.collection('clients').getFullList({
+        sort: '-created',
+        requestKey: null,
+      });
+      if (records && records.length > 0) {
+        return records.map((r) => ({
+          id: r.id,
+          name: r.name,
+          cpf: formatCpf(r.cpf),
+          active: r.active ?? true,
+          created: r.created,
+          updated: r.updated,
+        })) as Client[];
+      }
+    } catch (err: any) {
+      console.warn('[PocketBase] Aviso ao buscar clientes:', err?.message);
+    }
+  }
+
+  // Fallback Local Storage
+  try {
+    const local = localStorage.getItem(LOCAL_STORAGE_CLIENTS_KEY);
+    if (local) return JSON.parse(local);
+  } catch (e) {}
+
+  return [];
+};
+
+export const saveClientToDb = async (client: { name: string; cpf: string; active?: boolean }): Promise<Client> => {
+  const formattedCpf = formatCpf(client.cpf);
+  const rawCpf = cleanCpf(client.cpf);
+
+  if (rawCpf.length !== 11) {
+    throw new Error('O CPF informado deve conter exatamente 11 dígitos.');
+  }
+
+  if (!client.name || client.name.trim().length < 2) {
+    throw new Error('Informe o nome completo do cliente.');
+  }
+
+  const payload = {
+    name: client.name.trim(),
+    cpf: formattedCpf,
+    active: client.active ?? true,
+  };
+
+  if (isPocketBaseConfigured) {
+    try {
+      // Verifica duplicidade no PocketBase
+      try {
+        const existing = await pb.collection('clients').getFirstListItem(
+          `cpf = "${formattedCpf}" || cpf = "${rawCpf}"`,
+          { requestKey: null }
+        );
+        if (existing) {
+          throw new Error(`O CPF ${formattedCpf} já está cadastrado para ${existing.name}.`);
+        }
+      } catch (err: any) {
+        if (err.message?.includes('já está cadastrado')) throw err;
+      }
+
+      const record = await pb.collection('clients').create(payload);
+      return {
+        id: record.id,
+        name: record.name,
+        cpf: formatCpf(record.cpf),
+        active: record.active,
+        created: record.created,
+        updated: record.updated,
+      };
+    } catch (err: any) {
+      console.error('[PocketBase] Erro ao cadastrar cliente:', err);
+      throw new Error(err?.data?.message || err?.message || 'Falha ao cadastrar cliente no servidor.');
+    }
+  }
+
+  // Fallback Local Storage
+  const list = await fetchClientsFromDb();
+  if (list.some((c) => cleanCpf(c.cpf) === rawCpf)) {
+    throw new Error(`O CPF ${formattedCpf} já está cadastrado.`);
+  }
+
+  const newClient: Client = {
+    id: `local-client-${Date.now()}`,
+    ...payload,
+    created: new Date().toISOString(),
+  };
+
+  list.unshift(newClient);
+  localStorage.setItem(LOCAL_STORAGE_CLIENTS_KEY, JSON.stringify(list));
+  return newClient;
+};
+
+export const toggleClientStatusInDb = async (id: string, active: boolean): Promise<Client> => {
+  if (isPocketBaseConfigured && !id.startsWith('local-')) {
+    try {
+      const record = await pb.collection('clients').update(id, { active });
+      return {
+        id: record.id,
+        name: record.name,
+        cpf: formatCpf(record.cpf),
+        active: record.active,
+        created: record.created,
+        updated: record.updated,
+      };
+    } catch (err: any) {
+      console.error('[PocketBase] Erro ao alterar status do cliente:', err);
+      throw new Error(`Falha ao alterar status do cliente: ${err?.message}`);
+    }
+  }
+
+  // Fallback Local Storage
+  const list = await fetchClientsFromDb();
+  const idx = list.findIndex((c) => c.id === id);
+  if (idx >= 0) {
+    list[idx].active = active;
+    list[idx].updated = new Date().toISOString();
+    localStorage.setItem(LOCAL_STORAGE_CLIENTS_KEY, JSON.stringify(list));
+    return list[idx];
+  }
+  throw new Error('Cliente não encontrado.');
+};
+
+export const deleteClientFromDb = async (id: string): Promise<void> => {
+  if (isPocketBaseConfigured && !id.startsWith('local-')) {
+    try {
+      await pb.collection('clients').delete(id);
+    } catch (err: any) {
+      console.error('[PocketBase] Erro ao excluir cliente:', err);
+      throw new Error(`Falha ao excluir cliente: ${err?.message}`);
+    }
+  }
+
+  const list = await fetchClientsFromDb();
+  const filtered = list.filter((c) => c.id !== id);
+  localStorage.setItem(LOCAL_STORAGE_CLIENTS_KEY, JSON.stringify(filtered));
+};
+
+/** Valida CPF informado na entrada da Evolução da Obra */
+export const verifyClientCpf = async (inputCpf: string): Promise<{ valid: boolean; client?: Client; error?: string }> => {
+  const formatted = formatCpf(inputCpf);
+  const raw = cleanCpf(inputCpf);
+
+  if (raw.length !== 11) {
+    return { valid: false, error: 'Informe um CPF válido com 11 dígitos.' };
+  }
+
+  if (isPocketBaseConfigured) {
+    try {
+      // Busca cliente pelo CPF
+      let record: any = null;
+      try {
+        record = await pb.collection('clients').getFirstListItem(
+          `cpf = "${formatted}" || cpf = "${raw}"`,
+          { requestKey: null }
+        );
+      } catch (e) {}
+
+      if (record) {
+        if (!record.active) {
+          return {
+            valid: false,
+            error: 'Seu acesso está inativo no momento. Entre em contato e solicite a reativação do seu acesso.',
+          };
+        }
+
+        const client: Client = {
+          id: record.id,
+          name: record.name,
+          cpf: formatCpf(record.cpf),
+          active: record.active,
+        };
+
+        // Registra log de acesso em segundo plano
+        recordAccessLog(client).catch(() => {});
+
+        return { valid: true, client };
+      }
+    } catch (err) {
+      console.warn('[PocketBase] Erro ao verificar CPF no servidor:', err);
+    }
+  }
+
+  // Fallback Local Storage
+  const localList = await fetchClientsFromDb();
+  const found = localList.find((c) => cleanCpf(c.cpf) === raw);
+  if (found) {
+    if (!found.active) {
+      return {
+        valid: false,
+        error: 'Seu acesso está inativo no momento. Entre em contato e solicite a reativação do seu acesso.',
+      };
+    }
+    recordAccessLog(found).catch(() => {});
+    return { valid: true, client: found };
+  }
+
+  return {
+    valid: false,
+    error: 'Usuário não localizado, entre em contato e solicite seu acesso.',
+  };
+};
+
+export const fetchAccessLogsFromDb = async (): Promise<AccessLog[]> => {
+  if (isPocketBaseConfigured) {
+    try {
+      const records = await pb.collection('access_logs').getFullList({
+        sort: '-last_access',
+        requestKey: null,
+      });
+      if (records && records.length > 0) {
+        return records.map((r) => ({
+          id: r.id,
+          client_id: r.client_id,
+          client_name: r.client_name,
+          cpf: formatCpf(r.cpf),
+          access_count: r.access_count || 1,
+          last_access: r.last_access || r.created,
+          created: r.created,
+        })) as AccessLog[];
+      }
+    } catch (err) {}
+  }
+
+  // Fallback Local Storage
+  try {
+    const local = localStorage.getItem(LOCAL_STORAGE_ACCESS_LOGS_KEY);
+    if (local) return JSON.parse(local);
+  } catch (e) {}
+
+  return [];
+};
+
+export const recordAccessLog = async (client: Client): Promise<AccessLog> => {
+  const formattedCpf = formatCpf(client.cpf);
+  const now = new Date().toISOString();
+
+  if (isPocketBaseConfigured) {
+    try {
+      // Verifica se já existe um log para este CPF
+      let existingLog: any = null;
+      try {
+        existingLog = await pb.collection('access_logs').getFirstListItem(
+          `cpf = "${formattedCpf}" || cpf = "${cleanCpf(client.cpf)}"`,
+          { requestKey: null }
+        );
+      } catch (e) {}
+
+      if (existingLog) {
+        const updated = await pb.collection('access_logs').update(existingLog.id, {
+          client_name: client.name,
+          access_count: (existingLog.access_count || 1) + 1,
+          last_access: now,
+        });
+        return {
+          id: updated.id,
+          client_id: updated.client_id,
+          client_name: updated.client_name,
+          cpf: formatCpf(updated.cpf),
+          access_count: updated.access_count,
+          last_access: updated.last_access,
+        };
+      } else {
+        const created = await pb.collection('access_logs').create({
+          client_id: client.id,
+          client_name: client.name,
+          cpf: formattedCpf,
+          access_count: 1,
+          last_access: now,
+        });
+        return {
+          id: created.id,
+          client_id: created.client_id,
+          client_name: created.client_name,
+          cpf: formatCpf(created.cpf),
+          access_count: created.access_count,
+          last_access: created.last_access,
+        };
+      }
+    } catch (err) {
+      console.warn('[PocketBase] Falha ao registrar log no servidor:', err);
+    }
+  }
+
+  // Fallback Local Storage
+  const logs = await fetchAccessLogsFromDb();
+  const existingIdx = logs.findIndex((l) => cleanCpf(l.cpf) === cleanCpf(client.cpf));
+  let resultLog: AccessLog;
+
+  if (existingIdx >= 0) {
+    logs[existingIdx].access_count = (logs[existingIdx].access_count || 1) + 1;
+    logs[existingIdx].last_access = now;
+    logs[existingIdx].client_name = client.name;
+    resultLog = logs[existingIdx];
+  } else {
+    resultLog = {
+      id: `local-log-${Date.now()}`,
+      client_id: client.id,
+      client_name: client.name,
+      cpf: formattedCpf,
+      access_count: 1,
+      last_access: now,
+      created: now,
+    };
+    logs.unshift(resultLog);
+  }
+
+  localStorage.setItem(LOCAL_STORAGE_ACCESS_LOGS_KEY, JSON.stringify(logs));
+  return resultLog;
+};
+
