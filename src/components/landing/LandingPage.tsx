@@ -1026,10 +1026,10 @@ const Progress = () => {
           setPendingProperty(null);
         }
       } else {
-        setCpfError(res.error || 'usuário não localizado, entre em contato e solicite seu acesso');
+        setCpfError(res.error || 'Usuário não localizado, entre em contato e solicite seu acesso.');
       }
     } catch (err: any) {
-      setCpfError(err.message || 'usuário não localizado, entre em contato e solicite seu acesso');
+      setCpfError(err.message || 'Usuário não localizado, entre em contato e solicite seu acesso.');
     } finally {
       setIsVerifyingCpf(false);
     }

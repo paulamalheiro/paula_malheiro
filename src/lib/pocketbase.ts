@@ -803,7 +803,7 @@ export const verifyClientCpf = async (inputCpf: string): Promise<{ valid: boolea
         if (!record.active) {
           return {
             valid: false,
-            error: 'Seu acesso está inativo no momento. Entre em contato e solicite a reativação do seu acesso.',
+            error: 'Usuário não localizado, entre em contato e solicite seu acesso.',
           };
         }
 
@@ -831,7 +831,7 @@ export const verifyClientCpf = async (inputCpf: string): Promise<{ valid: boolea
     if (!found.active) {
       return {
         valid: false,
-        error: 'Seu acesso está inativo no momento. Entre em contato e solicite a reativação do seu acesso.',
+        error: 'Usuário não localizado, entre em contato e solicite seu acesso.',
       };
     }
     recordAccessLog(found).catch(() => {});
