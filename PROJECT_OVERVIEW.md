@@ -209,3 +209,15 @@ O arquivo [supabase_schema.sql](file:///c:/Users/IrvynNascimento/Documents/Mccle
 - **WhatsApp de Atendimento**: `+55 (77) 99146-5337`
 - **Instagram**: `https://www.instagram.com/paulamalheiro_vca`
 - **Cidade**: Vitória da Conquista – Bahia
+
+---
+
+## 8. Domínios & Infraestrutura de Produção
+- **Domínio Oficial**: `https://paulamalheiro.com.br` e `https://www.paulamalheiro.com.br`
+- **Servidor / VPS**: Hostinger VPS (`2.24.99.187`)
+- **Orquestrador / Proxy**: Coolify + Traefik (com SSL automático Let's Encrypt)
+- **Backend PocketBase**: `https://pb-paula.janagencia.com.br`
+- **DNS (Hostinger)**:
+  - Registro Tipo `A` (`@`) -> `2.24.99.187`
+  - Registro Tipo `CNAME` (`www`) -> `paulamalheiro.com.br`
+

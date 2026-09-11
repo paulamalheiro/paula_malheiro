@@ -33,7 +33,7 @@ async function main() {
 
   // 2. Git stage
   console.log('\n[2/4] Preparando arquivos modificados para commit no Git...');
-  runCmd('git add .gitignore .env.example package.json package-lock.json src/ scripts/ PROJECT_OVERVIEW.md', 'Git Add');
+  runCmd('git add .gitignore .env.example package.json package-lock.json src/ scripts/ PROJECT_OVERVIEW.md index.html', 'Git Add');
 
   // 3. Commit
   const commitMsg = process.argv.slice(2).join(' ') || 'feat: migração completa do frontend para PocketBase no Coolify';
@@ -83,7 +83,9 @@ Repositório: github.com/paulamalheiro/paula_malheiro (branch: main)
 Servidor Coolify: http://2.24.99.187:8000
 
 🌐 URLs Oficiais em Produção:
-- Site Público: https://paula.janagencia.com.br
+- Domínio Oficial: https://paulamalheiro.com.br
+- Subdomínio WWW: https://www.paulamalheiro.com.br
+- URL Temporária/Espelho: https://paula.janagencia.com.br
 - Backend PocketBase: https://pb-paula.janagencia.com.br
 =============================================================================
 `);
