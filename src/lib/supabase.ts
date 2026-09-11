@@ -33,9 +33,13 @@ export {
   recordAccessLog,
   formatCpf,
   cleanCpf,
+  fetchAdminUsers,
+  createAdminUser,
+  deleteAdminUser,
   type AuditLog,
   type Client,
   type AccessLog,
+  type AdminUser,
 } from './pocketbase';
 
 export const BUCKET_NAME = 'uploads';

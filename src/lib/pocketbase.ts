@@ -1010,3 +1010,104 @@ export const recordAccessLog = async (client: Client): Promise<AccessLog> => {
   return resultLog;
 };
 
+/* ==============================================================================
+   GESTÃO DE USUÁRIOS ADMINISTRADORES DO PAINEL (COLEÇÃO USERS)
+   ============================================================================== */
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+  created?: string;
+  updated?: string;
+}
+
+export const fetchAdminUsers = async (): Promise<AdminUser[]> => {
+  if (!isPocketBaseConfigured) return [];
+  try {
+    const records = await pb.collection('users').getFullList({
+      sort: '-created',
+      requestKey: null,
+    });
+    return records.map((r) => ({
+      id: r.id,
+      email: r.email,
+      name: r.name || 'Administrador',
+      created: r.created,
+      updated: r.updated,
+    }));
+  } catch (err: any) {
+    console.warn('[PocketBase] Falha ao listar administradores:', err?.message);
+    return [];
+  }
+};
+
+export const createAdminUser = async (data: {
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  name?: string;
+}): Promise<AdminUser> => {
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado.');
+  }
+
+  const cleanEmail = data.email.trim().toLowerCase();
+  if (!cleanEmail || !cleanEmail.includes('@')) {
+    throw new Error('Informe um e-mail válido para o administrador.');
+  }
+
+  if (!data.password || data.password.length < 8) {
+    throw new Error('A senha deve possuir no mínimo 8 caracteres.');
+  }
+
+  const hasLetter = /[a-zA-Z]/.test(data.password);
+  const hasNumber = /[0-9]/.test(data.password);
+  if (!hasLetter || !hasNumber) {
+    throw new Error('A senha deve ser alfanumérica (conter letras e números).');
+  }
+
+  if (data.password !== data.passwordConfirm) {
+    throw new Error('A confirmação de senha não confere com a senha informada.');
+  }
+
+  try {
+    const record = await pb.collection('users').create({
+      email: cleanEmail,
+      password: data.password,
+      passwordConfirm: data.passwordConfirm,
+      name: data.name?.trim() || 'Administrador',
+      emailVisibility: true,
+    });
+
+    return {
+      id: record.id,
+      email: record.email,
+      name: record.name,
+      created: record.created,
+      updated: record.updated,
+    };
+  } catch (err: any) {
+    console.error('[PocketBase] Erro ao criar administrador:', err);
+    const msg =
+      err?.data?.data?.email?.message ||
+      err?.data?.data?.password?.message ||
+      err?.data?.message ||
+      err?.message ||
+      'Falha ao criar usuário administrador.';
+    throw new Error(msg);
+  }
+};
+
+export const deleteAdminUser = async (id: string): Promise<void> => {
+  if (!isPocketBaseConfigured) {
+    throw new Error('PocketBase não configurado.');
+  }
+  try {
+    await pb.collection('users').delete(id);
+  } catch (err: any) {
+    console.error('[PocketBase] Erro ao excluir administrador:', err);
+    throw new Error(err?.data?.message || err?.message || 'Falha ao excluir usuário administrador.');
+  }
+};
+
