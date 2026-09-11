@@ -641,19 +641,36 @@ export function cleanCpf(value: string): string {
 export const fetchClientsFromDb = async (): Promise<Client[]> => {
   if (isPocketBaseConfigured) {
     try {
-      const records = await pb.collection('clients').getFullList({
-        sort: '-created',
-        requestKey: null,
-      });
+      let records: any[] = [];
+      try {
+        // Tenta buscar com ordenação decrescente por created se existir
+        records = await pb.collection('clients').getFullList({
+          sort: '-created',
+          requestKey: null,
+        });
+      } catch {
+        // Fallback para listagem padrão sem sort caso a coluna created não esteja indexada
+        records = await pb.collection('clients').getFullList({
+          requestKey: null,
+        });
+      }
+
       if (records && records.length > 0) {
-        return records.map((r) => ({
+        const mapped = records.map((r) => ({
           id: r.id,
           name: r.name,
           cpf: formatCpf(r.cpf),
           active: r.active ?? true,
-          created: r.created,
-          updated: r.updated,
+          created: r.created || '',
+          updated: r.updated || '',
         })) as Client[];
+
+        return mapped.sort((a, b) => {
+          if (a.created && b.created) {
+            return new Date(b.created).getTime() - new Date(a.created).getTime();
+          }
+          return (a.name || '').localeCompare(b.name || '');
+        });
       }
     } catch (err: any) {
       console.warn('[PocketBase] Aviso ao buscar clientes:', err?.message);

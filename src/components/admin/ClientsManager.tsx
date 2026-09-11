@@ -10,6 +10,7 @@ import {
   UserX,
   CreditCard,
   Check,
+  RefreshCw,
   X
 } from 'lucide-react';
 import { 
@@ -71,18 +72,18 @@ export const ClientsManager: React.FC = () => {
 
     setIsSaving(true);
     try {
-      const newClient = await saveClientToDb({
+      await saveClientToDb({
         name: name.trim(),
         cpf: cpf,
         active: true,
       });
 
-      setClients((prev) => [newClient, ...prev]);
+      await loadClients();
       setName('');
       setCpf('');
       setFeedback({
         type: 'success',
-        message: `Cliente "${newClient.name}" cadastrado com sucesso! Acesso à Evolução das Obras liberado.`,
+        message: `Cliente cadastrado com sucesso! Acesso à Evolução das Obras liberado.`,
       });
     } catch (err: any) {
       setFeedback({ type: 'error', message: err?.message || 'Erro ao cadastrar cliente.' });
@@ -127,13 +128,14 @@ export const ClientsManager: React.FC = () => {
   // Filtro de busca em tempo real
   const filteredClients = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const rawTerm = cleanCpf(term);
     if (!term) return clients;
+    const rawTerm = cleanCpf(term);
 
     return clients.filter((c) => {
-      const matchName = c.name.toLowerCase().includes(term);
-      const matchCpf = c.cpf.includes(term) || cleanCpf(c.cpf).includes(rawTerm);
-      return matchName || matchCpf;
+      const matchName = c.name ? c.name.toLowerCase().includes(term) : false;
+      const matchCpf = c.cpf ? c.cpf.toLowerCase().includes(term) : false;
+      const matchRawCpf = rawTerm.length > 0 ? cleanCpf(c.cpf || '').includes(rawTerm) : false;
+      return matchName || matchCpf || matchRawCpf;
     });
   }, [clients, searchTerm]);
 
@@ -267,18 +269,31 @@ export const ClientsManager: React.FC = () => {
             </p>
           </div>
 
-          {/* Campo de Busca em Tempo Real */}
-          <div className="relative w-full sm:w-72">
-            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-              <Search size={15} />
+          {/* Campo de Busca em Tempo Real e Botão de Atualizar */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative w-full sm:w-72">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                <Search size={15} />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nome ou CPF..."
+                className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
+              />
             </div>
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por nome ou CPF..."
-              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
-            />
+
+            <button
+              type="button"
+              onClick={loadClients}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 hover:text-primary bg-gray-100 hover:bg-gray-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer shrink-0 disabled:opacity-50"
+              title="Atualizar lista de clientes"
+            >
+              <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+              <span className="hidden sm:inline">Atualizar</span>
+            </button>
           </div>
         </div>
 

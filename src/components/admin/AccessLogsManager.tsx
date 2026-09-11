@@ -56,13 +56,14 @@ export const AccessLogsManager: React.FC = () => {
   // Filtro de busca em tempo real
   const filteredLogs = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    const rawTerm = cleanCpf(term);
     if (!term) return logs;
+    const rawTerm = cleanCpf(term);
 
     return logs.filter((l) => {
-      const matchName = l.client_name?.toLowerCase().includes(term);
-      const matchCpf = l.cpf?.includes(term) || cleanCpf(l.cpf || '').includes(rawTerm);
-      return matchName || matchCpf;
+      const matchName = l.client_name ? l.client_name.toLowerCase().includes(term) : false;
+      const matchCpf = l.cpf ? l.cpf.toLowerCase().includes(term) : false;
+      const matchRawCpf = rawTerm.length > 0 ? cleanCpf(l.cpf || '').includes(rawTerm) : false;
+      return matchName || matchCpf || matchRawCpf;
     });
   }, [logs, searchTerm]);
 

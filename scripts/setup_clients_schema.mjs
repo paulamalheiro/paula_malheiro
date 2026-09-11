@@ -71,6 +71,8 @@ async function run() {
         { name: 'name', type: 'text', required: true },
         { name: 'cpf', type: 'text', required: true },
         { name: 'active', type: 'bool', required: false },
+        { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
+        { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
       ],
       indexes: [
         'CREATE INDEX idx_clients_cpf ON clients (cpf)'
@@ -93,9 +95,32 @@ async function run() {
 
     console.log('Status criação clients:', createRes.status);
   } else {
-    console.log('✓ Coleção clients já existe. Verificando regras de API...');
+    console.log('✓ Coleção clients já existe. Verificando campos e regras de API...');
+    const fields = [...(existingClients.fields || [])];
+    if (!fields.some(f => f.name === 'created')) {
+      fields.push({
+        name: 'created',
+        type: 'autodate',
+        onCreate: true,
+        onUpdate: false,
+        hidden: false,
+        system: false
+      });
+    }
+    if (!fields.some(f => f.name === 'updated')) {
+      fields.push({
+        name: 'updated',
+        type: 'autodate',
+        onCreate: true,
+        onUpdate: true,
+        hidden: false,
+        system: false
+      });
+    }
+
     const updateClients = {
       ...existingClients,
+      fields,
       listRule: '',
       viewRule: '',
       createRule: '@request.auth.id != ""',
@@ -103,7 +128,7 @@ async function run() {
       deleteRule: '@request.auth.id != ""',
     };
 
-    await request({
+    const patchRes = await request({
       path: `/api/collections/${existingClients.id}`,
       method: 'PATCH',
       headers: {
@@ -111,7 +136,7 @@ async function run() {
         'Authorization': token
       }
     }, JSON.stringify(updateClients));
-    console.log('✓ Regras da coleção clients verificadas!');
+    console.log('✓ Regras e campos da coleção clients atualizados! Status:', patchRes.status);
   }
 
   // 4. Configurar coleção 'access_logs'
@@ -126,6 +151,8 @@ async function run() {
         { name: 'cpf', type: 'text', required: true },
         { name: 'access_count', type: 'number', required: false },
         { name: 'last_access', type: 'text', required: false },
+        { name: 'created', type: 'autodate', onCreate: true, onUpdate: false },
+        { name: 'updated', type: 'autodate', onCreate: true, onUpdate: true },
       ],
       indexes: [
         'CREATE INDEX idx_logs_cpf ON access_logs (cpf)'
@@ -148,9 +175,32 @@ async function run() {
 
     console.log('Status criação access_logs:', createRes.status);
   } else {
-    console.log('✓ Coleção access_logs já existe. Verificando regras de API...');
+    console.log('✓ Coleção access_logs já existe. Verificando campos e regras de API...');
+    const fields = [...(existingLogs.fields || [])];
+    if (!fields.some(f => f.name === 'created')) {
+      fields.push({
+        name: 'created',
+        type: 'autodate',
+        onCreate: true,
+        onUpdate: false,
+        hidden: false,
+        system: false
+      });
+    }
+    if (!fields.some(f => f.name === 'updated')) {
+      fields.push({
+        name: 'updated',
+        type: 'autodate',
+        onCreate: true,
+        onUpdate: true,
+        hidden: false,
+        system: false
+      });
+    }
+
     const updateLogs = {
       ...existingLogs,
+      fields,
       listRule: '@request.auth.id != ""',
       viewRule: '@request.auth.id != ""',
       createRule: '',
@@ -158,7 +208,7 @@ async function run() {
       deleteRule: '@request.auth.id != ""',
     };
 
-    await request({
+    const patchRes = await request({
       path: `/api/collections/${existingLogs.id}`,
       method: 'PATCH',
       headers: {
@@ -166,7 +216,7 @@ async function run() {
         'Authorization': token
       }
     }, JSON.stringify(updateLogs));
-    console.log('✓ Regras da coleção access_logs verificadas!');
+    console.log('✓ Regras e campos da coleção access_logs atualizados! Status:', patchRes.status);
   }
 
   console.log('\n✅ Esquema de coleções clients e access_logs configurado com sucesso e 100% preservado!');
