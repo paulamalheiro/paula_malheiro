@@ -1,4 +1,5 @@
 import PocketBase from 'pocketbase';
+import { compressImage } from './imageOptimizer';
 import type { Banner } from '../types/banner';
 import type { Property, Campaign } from '../types/property';
 import { INITIAL_PROPERTIES } from './propertiesData';
@@ -20,30 +21,54 @@ pb.autoCancellation(false);
  * Constrói a URL pública da imagem/vídeo respeitando o PocketBase ou fallbacks locais.
  * Suporta URLs absolutas, URLs de arquivos do PocketBase, records com método getUrl, blob/data URIs e paths relativos.
  */
-export const getImageUrl = (imagePath?: string | null | Record<string, any>): string => {
+export const getImageUrl = (
+  imagePath?: string | null | Record<string, any>,
+  thumb?: string
+): string => {
   if (!imagePath) return '';
+
+  const applyThumb = (url: string): string => {
+    if (!thumb || !url) return url;
+    // Não aplica thumbnail em vídeos, blobs ou data URLs
+    if (url.endsWith('.mp4') || url.endsWith('.webm') || url.startsWith('blob:') || url.startsWith('data:')) {
+      return url;
+    }
+    if (url.includes('?thumb=') || url.includes('&thumb=')) {
+      return url;
+    }
+    const separator = url.includes('?') ? '&' : '?';
+    return `${url}${separator}thumb=${encodeURIComponent(thumb)}`;
+  };
 
   // Se receber um record do PocketBase com objeto de arquivo
   if (typeof imagePath === 'object' && imagePath !== null) {
     if (imagePath.collectionId && imagePath.id && imagePath.file) {
       try {
-        return pb.files.getUrl(imagePath as any, imagePath.file);
+        const fileUrl = (pb.files as any).getURL 
+          ? (pb.files as any).getURL(imagePath as any, imagePath.file, thumb ? { thumb } : undefined)
+          : pb.files.getUrl(imagePath as any, imagePath.file);
+        return applyThumb(fileUrl);
       } catch {
-        return `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.file}`;
+        const raw = `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.file}`;
+        return applyThumb(raw);
       }
     }
     if (imagePath.collectionId && imagePath.id && imagePath.image) {
       try {
-        return pb.files.getUrl(imagePath as any, imagePath.image);
+        const fileUrl = (pb.files as any).getURL
+          ? (pb.files as any).getURL(imagePath as any, imagePath.image, thumb ? { thumb } : undefined)
+          : pb.files.getUrl(imagePath as any, imagePath.image);
+        return applyThumb(fileUrl);
       } catch {
-        return `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.image}`;
+        const raw = `${POCKETBASE_URL}/api/files/${imagePath.collectionId}/${imagePath.id}/${imagePath.image}`;
+        return applyThumb(raw);
       }
     }
     if (imagePath.image_path) {
-      return getImageUrl(imagePath.image_path);
+      return getImageUrl(imagePath.image_path, thumb);
     }
     if (imagePath.image_url) {
-      return getImageUrl(imagePath.image_url);
+      return getImageUrl(imagePath.image_url, thumb);
     }
     return '';
   }
@@ -63,21 +88,21 @@ export const getImageUrl = (imagePath?: string | null | Record<string, any>): st
     str.startsWith('blob:') ||
     str.startsWith('data:')
   ) {
-    return str;
+    return applyThumb(str);
   }
 
   // Se for um caminho de arquivo do PocketBase (/api/files/... ou api/files/...)
   if (str.startsWith('/api/files/')) {
-    return `${POCKETBASE_URL}${str}`;
+    return applyThumb(`${POCKETBASE_URL}${str}`);
   }
   if (str.startsWith('api/files/')) {
-    return `${POCKETBASE_URL}/${str}`;
+    return applyThumb(`${POCKETBASE_URL}/${str}`);
   }
 
   // Se for caminho de upload relativo (ex: uploads/id/file ou /uploads/id/file)
   if (str.startsWith('/uploads/') || str.startsWith('uploads/')) {
     const clean = str.replace(/^\/?uploads\//, '');
-    return `${POCKETBASE_URL}/api/files/uploads/${clean}`;
+    return applyThumb(`${POCKETBASE_URL}/api/files/uploads/${clean}`);
   }
 
   // Fallback para arquivo local em /public
@@ -567,15 +592,31 @@ export const uploadBannerFile = async (
   }
 
   try {
+    // Comprime e redimensiona em tempo real no cliente antes do upload (max 1080px e <= 1MB)
+    let uploadFile = file;
+    if (file.type.startsWith('image/') && file.type !== 'image/svg+xml' && file.type !== 'image/gif') {
+      try {
+        uploadFile = await compressImage(file, {
+          maxDimension: 1080,
+          maxSizeBytes: 1024 * 1024,
+          initialQuality: 0.84,
+        });
+      } catch (optErr) {
+        console.warn('[PocketBase] Falha na compressão automática de upload, enviando arquivo original:', optErr);
+      }
+    }
+
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', uploadFile);
     formData.append('title', `${_prefix}-${Date.now()}`);
 
     const record = await pb.collection('uploads').create(formData, { requestKey: null });
 
     let publicUrl = '';
     try {
-      publicUrl = pb.files.getUrl(record, record.file);
+      publicUrl = (pb.files as any).getURL 
+        ? (pb.files as any).getURL(record, record.file) 
+        : pb.files.getUrl(record, record.file);
     } catch {
       publicUrl = `${POCKETBASE_URL}/api/files/uploads/${record.id}/${record.file}`;
     }

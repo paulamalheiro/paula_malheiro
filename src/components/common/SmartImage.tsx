@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getImageUrl } from '../../lib/supabase';
+import { getImageUrl } from '../../lib/pocketbase';
 
 // Fotos oficiais locais
 const HERO_FALLBACK_IMAGE = '/paula-hero.jpeg';
@@ -11,6 +11,10 @@ interface SmartImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   alt: string;
   fallbackSrc?: string;
   className?: string;
+  /** Se true, desativa lazy loading para carregamento prioritário acima da dobra (ex: hero) */
+  priority?: boolean;
+  /** Dimensões opcionais de thumbnail do PocketBase (ex: '1080x0') */
+  thumb?: string;
 }
 
 export const SmartImage: React.FC<SmartImageProps> = ({
@@ -18,6 +22,8 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   alt,
   fallbackSrc,
   className = '',
+  priority = false,
+  thumb,
   ...props
 }) => {
   // 0: URL resolvida inicial | 1: Fallback local alternativo | 2: Fallback JSX de alta fidelidade
@@ -28,6 +34,7 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   }, [src]);
 
   const isHero = Boolean(
+    priority ||
     (src && typeof src === 'string' && src.includes('hero')) ||
     (alt && (alt.toLowerCase().includes('hero') || alt.toLowerCase().includes('paula malheiro')))
   );
@@ -38,7 +45,10 @@ export const SmartImage: React.FC<SmartImageProps> = ({
   );
 
   const defaultStage1 = fallbackSrc || (isHero ? HERO_FALLBACK_IMAGE : isProfile ? PROFILE_FALLBACK_IMAGE : GENERAL_FALLBACK_IMAGE);
-  const resolvedInitial = getImageUrl(src);
+  
+  // Utiliza thumb 1080x0 se não especificado explicitamente para garantir carregamento leve
+  const effectiveThumb = thumb !== undefined ? thumb : '1080x0';
+  const resolvedInitial = getImageUrl(src, effectiveThumb);
 
   // Determina a URL atual com base no estágio
   let currentSrc = resolvedInitial || defaultStage1;
@@ -88,7 +98,9 @@ export const SmartImage: React.FC<SmartImageProps> = ({
       src={currentSrc}
       alt={alt}
       onError={handleError}
-      loading="lazy"
+      loading={isHero || priority ? 'eager' : 'lazy'}
+      decoding={isHero || priority ? 'sync' : 'async'}
+      fetchPriority={isHero || priority ? 'high' : 'auto'}
       className={className}
       {...props}
     />

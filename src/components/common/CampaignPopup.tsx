@@ -122,10 +122,10 @@ export const CampaignPopup: React.FC = () => {
 
             {/* Footer com botão de ação opcional */}
             {activeCampaign.target_link && (
-              <div className="p-4 bg-white border-t border-gray-100 flex items-center justify-between gap-3">
+              <div className="p-3.5 sm:p-4 bg-white border-t border-gray-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end sm:justify-between gap-2.5">
                 <button
                   onClick={handleClose}
-                  className="text-xs font-bold text-gray-500 hover:text-gray-700 px-4 py-2.5 rounded-xl cursor-pointer"
+                  className="text-xs font-bold text-gray-500 hover:text-gray-700 py-2.5 px-4 rounded-xl cursor-pointer text-center"
                 >
                   Fechar
                 </button>
@@ -134,9 +134,10 @@ export const CampaignPopup: React.FC = () => {
                   target="_blank"
                   rel="noreferrer"
                   onClick={handleClose}
-                  className="bg-primary hover:bg-accent text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                  className="w-full sm:w-auto bg-primary hover:bg-accent text-white text-xs font-bold py-3 px-5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-center"
                 >
-                  Ver Detalhes / Chamar no WhatsApp <ExternalLink size={14} />
+                  <span>Ver Detalhes / Chamar no WhatsApp</span>
+                  <ExternalLink size={14} className="shrink-0" />
                 </a>
               </div>
             )}

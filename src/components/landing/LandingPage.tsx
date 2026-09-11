@@ -180,11 +180,11 @@ const Hero = () => {
                         {prefix}
                       </span>
                     )}
-                    <span className="text-7xl md:text-9xl font-sans font-black text-primary leading-none mb-4 tracking-tight">
+                    <span className="text-5xl sm:text-7xl md:text-9xl font-sans font-black text-primary leading-tight sm:leading-none mb-3 sm:mb-4 tracking-tight break-words">
                       {highlight}
                     </span>
                     {suffix && (
-                      <span className="text-lg md:text-xl font-sans text-gray-600 leading-relaxed italic">
+                      <span className="text-base sm:text-lg md:text-xl font-sans text-gray-600 leading-relaxed italic">
                         {suffix}
                       </span>
                     )}
@@ -192,40 +192,40 @@ const Hero = () => {
                 );
               }
               return (
-                <h1 className="text-4xl sm:text-6xl md:text-7xl font-sans font-black text-primary leading-tight mb-4 tracking-tight">
+                <h1 className="text-3xl sm:text-5xl md:text-7xl font-sans font-black text-primary leading-tight mb-4 tracking-tight break-words">
                   {raw}
                 </h1>
               );
             })()}
           </div>
-          <p className="text-lg text-gray-600 max-w-lg leading-relaxed">
+          <p className="text-base sm:text-lg text-gray-600 max-w-lg leading-relaxed">
             {heroSubtitle}
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center">
             <a 
               href={heroBtnLink}
-              className="w-full sm:w-auto bg-primary text-white px-8 py-4 rounded-lg font-bold hover:bg-accent transition-all shadow-xl shadow-primary/20 text-center"
+              className="w-full sm:w-auto bg-primary text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold hover:bg-accent transition-all shadow-xl shadow-primary/20 text-center text-sm sm:text-base flex items-center justify-center cursor-pointer"
             >
               {heroBtnText}
             </a>
-            <div className="flex gap-4 w-full sm:w-auto">
+            <div className="flex gap-2.5 sm:gap-4 w-full sm:w-auto">
               <a 
                 href="https://wa.me/5577991465337"
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 sm:flex-none bg-[#25D366] text-white px-8 py-4 rounded-lg font-bold hover:opacity-90 transition-all shadow-xl shadow-[#25D366]/20 text-center flex items-center justify-center gap-2"
+                className="flex-1 sm:flex-none bg-[#25D366] text-white px-4 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold hover:opacity-90 transition-all shadow-xl shadow-[#25D366]/20 text-center flex items-center justify-center gap-2 text-sm sm:text-base cursor-pointer"
               >
-                <WhatsAppIcon size={20} />
-                Agendar Atendimento
+                <WhatsAppIcon size={18} />
+                <span>Agendar Atendimento</span>
               </a>
               <a 
                 href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
                 target="_blank"
                 rel="noreferrer"
-                className="w-14 h-14 shrink-0 rounded-lg bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-105 transition-all shadow-lg"
+                className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-105 transition-all shadow-lg cursor-pointer"
                 title="Instagram"
               >
-                <Instagram size={24} />
+                <Instagram size={22} />
               </a>
             </div>
           </div>
@@ -242,6 +242,7 @@ const Hero = () => {
             alt="Paula Malheiro" 
             fallbackSrc="/paula-hero.jpeg"
             className="w-full h-full object-cover"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
         </motion.div>
@@ -603,7 +604,7 @@ const Benefits = () => {
           <div className="aspect-square rounded-3xl overflow-hidden shadow-2xl relative bg-gray-100">
             <SmartImage src={investImage} alt="Investimento" className="w-full h-full object-cover" />
           </div>
-          <div className="absolute -bottom-8 -left-8 bg-white p-8 rounded-2xl shadow-xl max-w-xs border border-gray-100">
+          <div className="relative mt-6 sm:mt-0 sm:absolute sm:-bottom-8 sm:-left-8 bg-white p-6 sm:p-8 rounded-2xl shadow-xl max-w-sm sm:max-w-xs border border-gray-100">
             <p className="italic text-gray-600 text-sm mb-4">
               &quot;{investQuote}&quot;
             </p>
@@ -675,14 +676,14 @@ const Simulation = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="flex justify-center"
+              className="flex justify-center px-4"
             >
               <button 
                 onClick={() => setShowForm(true)}
-                className="group relative bg-primary text-white px-12 py-6 rounded-2xl font-bold text-xl shadow-2xl shadow-primary/30 hover:scale-105 transition-all flex items-center justify-center overflow-hidden cursor-pointer"
+                className="w-full sm:w-auto min-w-[240px] group relative bg-primary text-white px-8 sm:px-12 py-4 sm:py-5 rounded-2xl font-bold text-lg sm:text-xl shadow-2xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center overflow-hidden cursor-pointer"
               >
                 <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                <span>Simular</span>
+                <span>Simular Financiamento</span>
               </button>
             </motion.div>
           ) : (
@@ -691,44 +692,44 @@ const Simulation = () => {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, y: 20 }}
-              className="bg-white p-8 md:p-12 rounded-[2rem] shadow-2xl border border-gray-100 text-left max-w-2xl mx-auto"
+              className="bg-white p-5 sm:p-8 md:p-12 rounded-3xl shadow-2xl border border-gray-100 text-left max-w-2xl mx-auto w-full"
             >
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-sans text-primary font-bold">Dados para Simulação</h3>
-                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-primary transition-colors cursor-pointer">
+              <div className="flex items-center justify-between mb-6 sm:mb-8">
+                <h3 className="text-xl sm:text-2xl font-sans text-primary font-bold">Dados para Simulação</h3>
+                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-primary transition-colors cursor-pointer p-1">
                   <X size={24} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div className="md:col-span-2 space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Nome Completo</label>
                   <input 
                     required
                     type="text" 
                     placeholder="Seu nome completo" 
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all text-sm sm:text-base"
                     value={formData.nome}
                     onChange={(e) => setFormData({...formData, nome: e.target.value})}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Data de Nascimento</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Data de Nascimento</label>
                   <input 
                     required
                     type="date" 
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all text-sm sm:text-base bg-white"
                     value={formData.dataNascimento}
                     onChange={(e) => setFormData({...formData, dataNascimento: e.target.value})}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Estado Civil</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Estado Civil</label>
                   <select 
                     required
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all bg-white"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all bg-white text-sm sm:text-base"
                     value={formData.estadoCivil}
                     onChange={(e) => setFormData({...formData, estadoCivil: e.target.value})}
                   >
@@ -740,39 +741,39 @@ const Simulation = () => {
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Profissão</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Profissão</label>
                   <input 
                     required
                     type="text" 
                     placeholder="Sua profissão" 
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all text-sm sm:text-base"
                     value={formData.profissao}
                     onChange={(e) => setFormData({...formData, profissao: e.target.value})}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Renda R$</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Renda R$</label>
                   <input 
                     required
                     type="text" 
                     placeholder="Ex: 5.000,00" 
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all text-sm sm:text-base"
                     value={formData.renda}
                     onChange={(e) => setFormData({...formData, renda: e.target.value})}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Possui dependentes?</label>
-                  <div className="flex gap-4 p-1 bg-secondary/30 rounded-xl">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Possui dependentes?</label>
+                  <div className="flex gap-2 sm:gap-4 p-1 bg-secondary/30 rounded-xl">
                     {['Sim', 'Não'].map((opt) => (
                       <button
                         key={opt}
                         type="button"
                         onClick={() => setFormData({...formData, dependentes: opt})}
-                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-all cursor-pointer ${formData.dependentes === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
+                        className={`flex-1 py-2.5 sm:py-3 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${formData.dependentes === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
                       >
                         {opt}
                       </button>
@@ -780,15 +781,15 @@ const Simulation = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Já possui Imóveis?</label>
-                  <div className="flex gap-4 p-1 bg-secondary/30 rounded-xl">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Já possui Imóveis?</label>
+                  <div className="flex gap-2 sm:gap-4 p-1 bg-secondary/30 rounded-xl">
                     {['Sim', 'Não'].map((opt) => (
                       <button
                         key={opt}
                         type="button"
                         onClick={() => setFormData({...formData, possuiImoveis: opt})}
-                        className={`flex-1 py-3 rounded-lg font-bold text-sm transition-all cursor-pointer ${formData.possuiImoveis === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
+                        className={`flex-1 py-2.5 sm:py-3 rounded-lg font-bold text-xs sm:text-sm transition-all cursor-pointer ${formData.possuiImoveis === opt ? 'bg-white text-primary shadow-xs' : 'text-gray-500 hover:text-primary'}`}
                       >
                         {opt}
                       </button>
@@ -796,33 +797,31 @@ const Simulation = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 ml-1">Onde Reside</label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <label className="text-xs sm:text-sm font-bold text-gray-700 ml-1">Onde Reside</label>
                   <input 
                     required
                     type="text" 
                     placeholder="Cidade / Estado" 
-                    className="w-full p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all"
+                    className="w-full p-3.5 sm:p-4 rounded-xl border border-gray-200 focus:border-primary outline-none transition-all text-sm sm:text-base"
                     value={formData.ondeReside}
                     onChange={(e) => setFormData({...formData, ondeReside: e.target.value})}
                   />
                 </div>
 
-                <div className="md:col-span-2 pt-4">
+                <div className="md:col-span-2 pt-3 sm:pt-4">
                   <button 
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full bg-primary text-white py-5 rounded-xl font-bold text-lg hover:bg-accent transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20 disabled:opacity-50 cursor-pointer"
+                    className="w-full bg-primary text-white py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:bg-accent active:scale-[0.99] transition-all flex items-center justify-center gap-3 shadow-xl shadow-primary/20 disabled:opacity-50 cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <div className="flex items-center gap-3">
-                        Simular
-                      </div>
+                      <span>Enviar Simulação no WhatsApp</span>
                     )}
                   </button>
-                  <p className="text-[10px] text-gray-400 text-center mt-4 uppercase tracking-widest">
+                  <p className="text-[10px] text-gray-400 text-center mt-3 sm:mt-4 uppercase tracking-widest">
                     Seus dados estão protegidos e serão usados apenas para a simulação.
                   </p>
                 </div>
@@ -1077,7 +1076,7 @@ const Progress = () => {
             <div className="w-8 h-8 border-3 border-primary/20 border-t-primary rounded-full animate-spin mx-auto mb-3" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3 sm:gap-4">
             {constructionProperties.map((prop, idx) => {
               const isVideo = prop.media_type === 'videos' && Boolean(prop.gallery_videos && prop.gallery_videos.length > 0);
 
@@ -1452,38 +1451,39 @@ const Progress = () => {
 };
 
 const CTA = () => (
-  <section className="py-24 px-4">
-    <div className="max-w-5xl mx-auto bg-primary rounded-[3rem] p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl shadow-primary/30">
+  <section className="py-16 sm:py-24 px-4">
+    <div className="max-w-5xl mx-auto bg-primary rounded-3xl sm:rounded-[3rem] p-8 sm:p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl shadow-primary/30">
       <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
         <Building2 className="absolute -top-10 -left-10 w-64 h-64" />
         <Building2 className="absolute -bottom-10 -right-10 w-64 h-64" />
       </div>
       
-      <div className="relative z-10 space-y-8">
-        <h2 className="text-4xl md:text-6xl font-sans leading-tight">
+      <div className="relative z-10 space-y-6 sm:space-y-8">
+        <h2 className="text-3xl sm:text-5xl md:text-6xl font-sans font-bold leading-tight">
           Não encontrou o que procura?
         </h2>
-        <p className="text-lg text-white/80 max-w-xl mx-auto">
+        <p className="text-sm sm:text-lg text-white/80 max-w-xl mx-auto leading-relaxed">
           Estou pronta para apresentar as melhores oportunidades em imóveis para você.
         </p>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-6 w-full max-w-md mx-auto sm:max-w-none">
           <a 
             href="https://wa.me/5577991465337" 
-            target="_blank"
+            target="_blank" 
             rel="noreferrer"
-            className="bg-[#25D366] text-white px-10 py-5 rounded-xl font-bold text-lg hover:scale-105 transition-transform shadow-xl inline-flex items-center gap-3"
+            className="w-full sm:w-auto bg-[#25D366] text-white px-8 sm:px-10 py-4 sm:py-5 rounded-xl font-bold text-base sm:text-lg hover:scale-105 active:scale-95 transition-transform shadow-xl flex items-center justify-center gap-3 cursor-pointer"
           >
-            <WhatsAppIcon size={24} />
-            Chame aqui
+            <WhatsAppIcon size={22} />
+            <span>Chame aqui</span>
           </a>
           <a 
             href="https://www.instagram.com/paulamalheiro_vca?igsh=MXZsOHV5cWQ2bnAyaQ=="
             target="_blank"
             rel="noreferrer"
-            className="w-16 h-16 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-110 transition-transform shadow-xl"
+            className="w-full sm:w-16 h-13 sm:h-16 rounded-xl bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] flex items-center justify-center text-white hover:scale-105 active:scale-95 transition-transform shadow-xl gap-2 font-bold text-sm sm:text-base sm:font-normal cursor-pointer"
             title="Instagram"
           >
-            <Instagram size={32} />
+            <Instagram size={24} />
+            <span className="sm:hidden">Acessar Instagram</span>
           </a>
         </div>
       </div>
@@ -1492,8 +1492,8 @@ const CTA = () => (
 );
 
 const Footer = () => (
-  <footer id="contact" className="bg-secondary/50 pt-24 pb-12 border-t border-gray-100">
-    <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-4 gap-12 mb-16">
+  <footer id="contact" className="bg-secondary/50 pt-16 sm:pt-24 pb-10 sm:pb-12 border-t border-gray-100">
+    <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 sm:gap-12 mb-12 sm:mb-16">
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
           <div className="text-2xl font-sans text-primary font-bold leading-none tracking-tight">Paula Malheiro</div>
@@ -1510,7 +1510,7 @@ const Footer = () => (
       </div>
 
       <div>
-        <h4 className="font-bold text-primary mb-6">Navegação Rápida</h4>
+        <h4 className="font-bold text-primary mb-4 sm:mb-6">Navegação Rápida</h4>
         <ul className="space-y-3 text-sm text-gray-600">
           <li><a href="#home" className="hover:text-primary transition-colors">Início</a></li>
           <li><a href="#projects" className="hover:text-primary transition-colors">Empreendimentos</a></li>
@@ -1521,7 +1521,7 @@ const Footer = () => (
       </div>
 
       <div>
-        <h4 className="font-bold text-primary mb-6">Contato</h4>
+        <h4 className="font-bold text-primary mb-4 sm:mb-6">Contato</h4>
         <ul className="space-y-3 text-sm text-gray-600">
           <li>Vitória da Conquista - BA</li>
           <li>CRECI: 21.188</li>
@@ -1530,7 +1530,7 @@ const Footer = () => (
       </div>
 
       <div className="space-y-4">
-        <h4 className="font-bold text-primary mb-6">Área Restrita</h4>
+        <h4 className="font-bold text-primary mb-4 sm:mb-6">Área Restrita</h4>
         <p className="text-xs text-gray-500 leading-relaxed">
           Acesso ao painel administrativo para gestão de banners, empreendimentos e campanhas.
         </p>
@@ -1543,7 +1543,7 @@ const Footer = () => (
       </div>
     </div>
 
-    <div className="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
+    <div className="max-w-7xl mx-auto px-4 pt-8 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4 text-center sm:text-left">
       <div>Paula Malheiro &copy; {new Date().getFullYear()} • Todos os direitos reservados.</div>
       <div>Vitória da Conquista – Bahia</div>
     </div>
@@ -1552,9 +1552,10 @@ const Footer = () => (
       href="https://wa.me/5577991465337" 
       target="_blank" 
       rel="noreferrer"
-      className="fixed bottom-8 right-8 w-16 h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform z-50"
+      className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 w-13 h-13 sm:w-16 sm:h-16 bg-[#25D366] text-white rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform z-50"
+      title="Fale no WhatsApp"
     >
-      <WhatsAppIcon size={32} />
+      <WhatsAppIcon size={28} />
     </a>
   </footer>
 );

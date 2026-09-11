@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Image as ImageIcon, CheckCircle, AlertCircle, RefreshCw } from 'lucide-react';
-import { getImageUrl } from '../../lib/supabase';
+import { UploadCloud, Image as ImageIcon, CheckCircle, AlertCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
+import { getImageUrl } from '../../lib/pocketbase';
+import { compressImageWithDetails, formatBytes } from '../../lib/imageOptimizer';
 
 interface ImageUploaderProps {
   currentImagePath?: string | null;
@@ -9,16 +10,25 @@ interface ImageUploaderProps {
   recommendedResolution?: string;
 }
 
+interface CompressionStats {
+  original: string;
+  compressed: string;
+  percent: number;
+  dimensions: string;
+}
+
 export const ImageUploader: React.FC<ImageUploaderProps> = ({
   currentImagePath,
   onImageSelected,
   aspectRatio = 'aspect-[4/5]',
-  recommendedResolution = '1200 x 1500 px (JPG, PNG ou WebP)',
+  recommendedResolution = '1080px (JPG, PNG ou WebP comprimido)',
 }) => {
   const [dragOver, setDragOver] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isOptimizing, setIsOptimizing] = useState(false);
+  const [compressionStats, setCompressionStats] = useState<CompressionStats | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Reseta o preview temporário sempre que a imagem atual (ou seção) for alterada
@@ -26,24 +36,52 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
     setPreviewUrl(null);
     setSelectedFileName(null);
     setErrorMsg(null);
+    setCompressionStats(null);
   }, [currentImagePath]);
 
-  const handleFile = (file: File) => {
+  const handleFile = async (file: File) => {
     setErrorMsg(null);
+    setCompressionStats(null);
+
     if (!file.type.startsWith('image/')) {
       setErrorMsg('Por favor, selecione um arquivo de imagem válido (JPG, PNG, WebP).');
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      setErrorMsg('O tamanho da imagem não deve exceder 15MB.');
+    if (file.size > 25 * 1024 * 1024) {
+      setErrorMsg('O tamanho da imagem bruta não deve exceder 25MB.');
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-    setSelectedFileName(file.name);
-    onImageSelected(file);
+    try {
+      setIsOptimizing(true);
+      const result = await compressImageWithDetails(file, {
+        maxDimension: 1080,
+        maxSizeBytes: 1024 * 1024,
+        initialQuality: 0.84,
+      });
+
+      const objectUrl = URL.createObjectURL(result.file);
+      setPreviewUrl(objectUrl);
+      setSelectedFileName(result.file.name);
+      setCompressionStats({
+        original: formatBytes(result.originalSize),
+        compressed: formatBytes(result.compressedSize),
+        percent: result.reductionPercentage,
+        dimensions: `${result.width} × ${result.height} px`,
+      });
+
+      onImageSelected(result.file);
+    } catch (err: any) {
+      console.error('[ImageUploader] Erro na otimização:', err);
+      // Fallback para arquivo original
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+      setSelectedFileName(file.name);
+      onImageSelected(file);
+    } finally {
+      setIsOptimizing(false);
+    }
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -111,7 +149,22 @@ export const ImageUploader: React.FC<ImageUploaderProps> = ({
               </div>
             )}
           </div>
-          {previewUrl && (
+          {isOptimizing && (
+            <div className="flex items-center gap-2 text-xs text-primary bg-primary/10 px-3.5 py-2.5 rounded-xl border border-primary/20 animate-pulse">
+              <Loader2 size={15} className="animate-spin text-primary shrink-0" />
+              <span className="font-semibold">Otimizando e comprimindo imagem para 1080px...</span>
+            </div>
+          )}
+          {compressionStats && !isOptimizing && (
+            <div className="flex flex-col gap-1 text-xs text-emerald-800 bg-emerald-50 px-3.5 py-2.5 rounded-xl border border-emerald-200 shadow-xs">
+              <div className="flex items-center gap-1.5 font-bold">
+                <Sparkles size={14} className="text-emerald-600 shrink-0" />
+                <span>Otimizado: {compressionStats.original} ➔ {compressionStats.compressed} {compressionStats.percent > 0 ? `(-${compressionStats.percent}%)` : ''}</span>
+              </div>
+              <span className="text-[11px] text-emerald-600 font-medium">Dimensões: {compressionStats.dimensions} • Arquivo pronto para envio</span>
+            </div>
+          )}
+          {previewUrl && !compressionStats && !isOptimizing && (
             <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
               <CheckCircle size={14} className="shrink-0 text-amber-600" />
               <span>Nova imagem pronta para envio ({selectedFileName})</span>
