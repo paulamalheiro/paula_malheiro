@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utilitário de Otimização e Compressão de Imagens em Tempo Real
  * - Redimensiona proporcionalmente para resolução máxima de 1080px (largura ou altura)
  * - Comprime para garantir peso inferior a 1MB (meta ideal: 150KB - 400KB)
@@ -21,6 +21,7 @@ export interface CompressionResult {
   width: number;
   height: number;
   savedPercent: number;
+  reductionPercentage: number;
 }
 
 export function formatBytes(bytes: number, decimals = 1): string {
@@ -59,6 +60,7 @@ export async function compressImageWithDetails(
       width: 0,
       height: 0,
       savedPercent: 0,
+      reductionPercentage: 0,
     };
   }
 
@@ -98,6 +100,7 @@ export async function compressImageWithDetails(
               width,
               height,
               savedPercent: 0,
+              reductionPercentage: 0,
             });
             return;
           }
@@ -128,6 +131,7 @@ export async function compressImageWithDetails(
               width,
               height,
               savedPercent: 0,
+              reductionPercentage: 0,
             });
             return;
           }
@@ -153,6 +157,7 @@ export async function compressImageWithDetails(
             width,
             height,
             savedPercent,
+            reductionPercentage: savedPercent,
           });
         } catch (err) {
           console.warn('[imageOptimizer] Erro durante compressão canvas, utilizando original:', err);
@@ -163,6 +168,7 @@ export async function compressImageWithDetails(
             width: img.width,
             height: img.height,
             savedPercent: 0,
+            reductionPercentage: 0,
           });
         }
       };

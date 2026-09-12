@@ -17,9 +17,22 @@ import {
   Sliders,
   Megaphone,
   Search,
-  Filter
+  Filter,
+  Users,
+  UserPlus,
+  Trash2,
+  Shield
 } from 'lucide-react';
-import { changeAdminPassword, fetchAuditLogs, type AuditLog } from '../../lib/pocketbase';
+import { 
+  changeAdminPassword, 
+  fetchAuditLogs, 
+  fetchAdminUsers, 
+  createAdminUser, 
+  deleteAdminUser, 
+  logAuditEvent,
+  type AuditLog,
+  type AdminUser 
+} from '../../lib/pocketbase';
 import { useAuth } from '../../context/AuthContext';
 
 interface SettingsModalProps {
@@ -27,7 +40,7 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'password' | 'logs';
+type SettingsTab = 'password' | 'logs' | 'admins';
 
 interface SettingsErrorBoundaryProps {
   children: React.ReactNode;
@@ -216,6 +229,18 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Estados de Administradores
+  const [admins, setAdmins] = useState<AdminUser[]>([]);
+  const [isLoadingAdmins, setIsLoadingAdmins] = useState(false);
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [newAdminConfirm, setNewAdminConfirm] = useState('');
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
+  const [showAdminConfirm, setShowAdminConfirm] = useState(false);
+  const [isCreatingAdmin, setIsCreatingAdmin] = useState(false);
+  const [adminFeedback, setAdminFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   // Carrega logs com useCallback para manter referência estável
   const loadLogs = React.useCallback(async () => {
     setIsLoadingLogs(true);
@@ -232,15 +257,31 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   }, []);
 
-  // Dispara busca de logs ao abrir modal ou alternar para a aba de logs
+  // Carrega administradores
+  const loadAdmins = useCallback(async () => {
+    setIsLoadingAdmins(true);
+    try {
+      const data = await fetchAdminUsers();
+      setAdmins(data);
+    } catch (err: any) {
+      console.warn('[SettingsModal] Falha ao carregar administradores:', err?.message);
+    } finally {
+      setIsLoadingAdmins(false);
+    }
+  }, []);
+
+  // Dispara busca de dados ao abrir modal ou alternar abas
   useEffect(() => {
     if (isOpen) {
       setPasswordFeedback(null);
+      setAdminFeedback(null);
       if (activeTab === 'logs') {
         loadLogs();
+      } else if (activeTab === 'admins') {
+        loadAdmins();
       }
     }
-  }, [isOpen, activeTab, loadLogs]);
+  }, [isOpen, activeTab, loadLogs, loadAdmins]);
 
   // Filtro de logs com useMemo garantido em todo ciclo de renderização
   const safeLogs = Array.isArray(logs) ? logs : [];
@@ -324,6 +365,86 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
     }
   };
 
+  const handleCreateAdminSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminFeedback(null);
+
+    const cleanEmail = newAdminEmail.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setAdminFeedback({ type: 'error', message: 'Informe um e-mail válido para o administrador.' });
+      return;
+    }
+
+    if (newAdminPassword.length < 8) {
+      setAdminFeedback({ type: 'error', message: 'A senha deve possuir no mínimo 8 caracteres.' });
+      return;
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newAdminPassword);
+    const hasNumber = /[0-9]/.test(newAdminPassword);
+    if (!hasLetter || !hasNumber) {
+      setAdminFeedback({ type: 'error', message: 'A senha deve ser alfanumérica (conter letras e números).' });
+      return;
+    }
+
+    if (newAdminPassword !== newAdminConfirm) {
+      setAdminFeedback({ type: 'error', message: 'A confirmação de senha não confere com a senha digitada.' });
+      return;
+    }
+
+    setIsCreatingAdmin(true);
+    try {
+      await createAdminUser({
+        email: cleanEmail,
+        password: newAdminPassword,
+        passwordConfirm: newAdminConfirm,
+        name: newAdminName.trim() || undefined,
+      });
+
+      await logAuditEvent(
+        'Criação de Administrador',
+        `Novo administrador cadastrado com acesso total: ${cleanEmail}`,
+        'Segurança & Acesso'
+      );
+
+      setAdminFeedback({
+        type: 'success',
+        message: `Administrador "${cleanEmail}" cadastrado com sucesso! Acesso total ao painel liberado.`,
+      });
+
+      setNewAdminEmail('');
+      setNewAdminName('');
+      setNewAdminPassword('');
+      setNewAdminConfirm('');
+      loadAdmins();
+    } catch (err: any) {
+      setAdminFeedback({ type: 'error', message: err.message || 'Erro ao criar administrador.' });
+    } finally {
+      setIsCreatingAdmin(false);
+    }
+  };
+
+  const handleDeleteAdmin = async (admin: AdminUser) => {
+    if (admin.email.toLowerCase() === user?.email?.toLowerCase()) {
+      alert('Você não pode excluir o usuário atualmente em uso nesta sessão.');
+      return;
+    }
+
+    if (window.confirm(`Tem certeza que deseja revogar o acesso e excluir o administrador "${admin.email}"?`)) {
+      try {
+        await deleteAdminUser(admin.id);
+        await logAuditEvent(
+          'Exclusão de Administrador',
+          `Acesso revogado do administrador: ${admin.email}`,
+          'Segurança & Acesso'
+        );
+        loadAdmins();
+      } catch (err: any) {
+        alert(err.message || 'Erro ao excluir administrador.');
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/65 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-4xl lg:max-w-5xl overflow-hidden flex flex-col max-h-[92vh] animate-in fade-in zoom-in-95 duration-200 my-auto">
@@ -364,6 +485,18 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
             }`}
           >
             <History size={16} /> Histórico de Alterações ({logs.length})
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('admins')}
+            className={`pb-3 px-4 text-xs font-bold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+              activeTab === 'admins'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-gray-500 hover:text-gray-800'
+            }`}
+          >
+            <UserPlus size={16} /> Administradores ({admins.length})
           </button>
 
           <button
@@ -492,6 +625,215 @@ const SettingsModalContent: React.FC<SettingsModalProps> = ({ isOpen, onClose })
                 </button>
               </div>
             </form>
+          )}
+
+          {/* ABA: GESTÃO DE ADMINISTRADORES */}
+          {activeTab === 'admins' && (
+            <div className="space-y-6 max-w-2xl mx-auto py-2">
+              {/* Formulário de Criação de Administrador */}
+              <div className="bg-gray-50/80 p-5 sm:p-6 rounded-2xl border border-gray-200/80 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider flex items-center gap-2">
+                    <UserPlus size={18} className="text-primary" />
+                    Cadastrar Novo Administrador
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Crie um novo acesso administrativo com e-mail e senha alfanumérica. Este usuário terá permissão total para gerenciar o conteúdo, empreendimentos, obras e configurações do site.
+                  </p>
+                </div>
+
+                {adminFeedback && (
+                  <div
+                    className={`p-4 rounded-xl text-xs flex items-start gap-2 border ${
+                      adminFeedback.type === 'success'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                    }`}
+                  >
+                    {adminFeedback.type === 'success' ? (
+                      <CheckCircle2 size={16} className="shrink-0 text-emerald-600 mt-0.5" />
+                    ) : (
+                      <AlertCircle size={16} className="shrink-0 text-red-600 mt-0.5" />
+                    )}
+                    <span>{adminFeedback.message}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleCreateAdminSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* E-mail */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        E-mail do Administrador *
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        value={newAdminEmail}
+                        onChange={(e) => setNewAdminEmail(e.target.value)}
+                        placeholder="ex: contato@paulamalheiro.com.br"
+                        className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs bg-white"
+                      />
+                    </div>
+
+                    {/* Nome de Exibição */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        Nome / Cargo
+                      </label>
+                      <input
+                        type="text"
+                        value={newAdminName}
+                        onChange={(e) => setNewAdminName(e.target.value)}
+                        placeholder="ex: Paula Malheiro ou Gestor"
+                        className="block w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Senha Alfanumérica */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        Senha Alfanumérica *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showAdminPassword ? 'text' : 'password'}
+                          required
+                          minLength={8}
+                          value={newAdminPassword}
+                          onChange={(e) => setNewAdminPassword(e.target.value)}
+                          placeholder="Mínimo 8 caracteres (letras e números)"
+                          className="block w-full px-3.5 py-2.5 pr-10 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminPassword(!showAdminPassword)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                        >
+                          {showAdminPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                      <span className="text-[10px] text-gray-500 mt-1 block">
+                        Exigido: combinação de letras e números.
+                      </span>
+                    </div>
+
+                    {/* Confirmar Senha */}
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        Confirmar Senha *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showAdminConfirm ? 'text' : 'password'}
+                          required
+                          minLength={8}
+                          value={newAdminConfirm}
+                          onChange={(e) => setNewAdminConfirm(e.target.value)}
+                          placeholder="Repita a mesma senha"
+                          className="block w-full px-3.5 py-2.5 pr-10 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary text-xs bg-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowAdminConfirm(!showAdminConfirm)}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 cursor-pointer"
+                        >
+                          {showAdminConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isCreatingAdmin}
+                      className="px-6 py-2.5 bg-primary hover:bg-accent text-white font-bold text-xs rounded-xl shadow-md shadow-primary/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isCreatingAdmin ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Cadastrando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus size={15} /> Cadastrar Administrador
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Lista de Administradores Cadastrados */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                  <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <Users size={16} className="text-primary" /> Administradores com Acesso Total ({admins.length})
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={() => loadAdmins()}
+                    className="text-xs text-primary hover:text-accent font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <RefreshCw size={13} className={isLoadingAdmins ? 'animate-spin' : ''} /> Atualizar
+                  </button>
+                </div>
+
+                {isLoadingAdmins ? (
+                  <div className="py-8 text-center text-xs text-gray-400">Carregando administradores...</div>
+                ) : admins.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-gray-400 bg-gray-50 rounded-2xl border border-gray-100">
+                    Nenhum administrador adicional cadastrado.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {admins.map((adm) => {
+                      const isCurrentUser = adm.email.toLowerCase() === user?.email?.toLowerCase();
+                      return (
+                        <div
+                          key={adm.id}
+                          className="flex items-center justify-between p-3.5 bg-white rounded-2xl border border-gray-200/80 shadow-xs hover:border-gray-300 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold text-sm">
+                              {adm.name ? adm.name.charAt(0).toUpperCase() : adm.email.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-xs text-gray-900">{adm.name || 'Administrador'}</span>
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                                  Acesso Total
+                                </span>
+                                {isCurrentUser && (
+                                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                                    Sua Sessão
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-500 font-mono">{adm.email}</span>
+                            </div>
+                          </div>
+
+                          {!isCurrentUser && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAdmin(adm)}
+                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors cursor-pointer"
+                              title={`Excluir administrador ${adm.email}`}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
           {activeTab === 'logs' && (

@@ -1,140 +1,122 @@
-import PocketBase from 'pocketbase';
+﻿import PocketBase from 'pocketbase';
 import sharp from 'sharp';
 
 const pb = new PocketBase('https://pb-paula.janagencia.com.br');
-pb.autoCancellation(false);
 
-function formatMB(bytes) {
-  return (bytes / (1024 * 1024)).toFixed(2) + ' MB (' + (bytes / 1024).toFixed(0) + ' KB)';
+function formatBytes(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-async function compressExistingImages() {
-  console.log(`
-=============================================================================
-   🚀 OTIMIZANDO IMAGENS EXISTENTES NO POCKETBASE (MAX 1080px, <= 1MB)
-=============================================================================
-`);
+async function compressAllExistingImages() {
+  console.log('=================================================================');
+  console.log('   🖼️ OTIMIZADOR DE IMAGENS POCKETBASE (MAX 1080px & < 1MB)');
+  console.log('=================================================================\n');
 
-  try {
-    console.log('Autenticando superusuário...');
-    await pb.collection('_superusers').authWithPassword('mccley.1@gmail.com', '082025mccley');
-    console.log('✓ Superusuário autenticado com sucesso!\n');
+  await pb.collection('_superusers').authWithPassword('mccley.1@gmail.com', '082025mccley');
+  console.log('✓ Superusuário autenticado com sucesso no PocketBase');
 
-    const uploads = await pb.collection('uploads').getFullList();
-    console.log(`Analisando ${uploads.length} arquivos na coleção 'uploads'...\n`);
+  const uploads = await pb.collection('uploads').getFullList();
+  console.log(`Analisando ${uploads.length} arquivos na coleção uploads...\n`);
 
-    let totalOriginalBytes = 0;
-    let totalOptimizedBytes = 0;
-    let optimizedCount = 0;
+  let totalOriginal = 0;
+  let totalOptimized = 0;
+  let optimizedCount = 0;
 
-    for (const record of uploads) {
-      if (!record.file) continue;
+  for (const record of uploads) {
+    const filename = record.file;
+    if (!filename) continue;
 
-      // Ignora vídeos ou formatos não aplicáveis
-      const ext = record.file.split('.').pop().toLowerCase();
-      if (['mp4', 'webm', 'mov', 'svg', 'gif'].includes(ext)) {
-        console.log(`[Pular] ${record.id} - ${record.file} (formato especial: .${ext})`);
-        continue;
-      }
+    // Ignora vídeos
+    if (filename.endsWith('.mp4') || filename.endsWith('.webm') || filename.endsWith('.mov')) {
+      continue;
+    }
 
-      const fileUrl = pb.files.getURL(record, record.file);
-      
-      try {
-        const response = await fetch(fileUrl);
-        if (!response.ok) {
-          console.warn(`[Aviso] Falha ao baixar ${fileUrl}: status ${response.status}`);
-          continue;
-        }
+    const fileUrl = `https://pb-paula.janagencia.com.br/api/files/uploads/${record.id}/${filename}`;
 
-        const arrayBuffer = await response.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const originalSize = buffer.length;
-        totalOriginalBytes += originalSize;
+    try {
+      const res = await fetch(fileUrl);
+      if (!res.ok) continue;
 
-        // Inspeciona dimensões com sharp
-        const meta = await sharp(buffer).metadata();
-        const maxSide = Math.max(meta.width || 0, meta.height || 0);
+      const arrayBuffer = await res.arrayBuffer();
+      const originalBuffer = Buffer.from(arrayBuffer);
+      const originalSize = originalBuffer.length;
 
-        // Otimiza se tiver mais de 1MB OU se a resolução for maior que 1080px
-        const needsOptimization = originalSize > 1024 * 1024 || maxSide > 1080;
+      // Obtém metadados da imagem
+      const metadata = await sharp(originalBuffer).metadata();
+      const isTooBig = originalSize > 1024 * 1024; // > 1MB
+      const isTooLargeDimension = (metadata.width && metadata.width > 1080) || (metadata.height && metadata.height > 1080);
 
-        if (!needsOptimization) {
-          totalOptimizedBytes += originalSize;
-          console.log(`✓ [OK] ${record.id} - ${record.file}: ${formatMB(originalSize)} (${meta.width}x${meta.height})`);
-          continue;
-        }
+      if (isTooBig || isTooLargeDimension) {
+        console.log(`\nProcessando: ${filename} (ID: ${record.id})`);
+        console.log(`  Original: ${metadata.width}x${metadata.height} px | ${formatBytes(originalSize)}`);
 
-        console.log(`⚡ [Otimizando] ${record.id} - ${record.file}`);
-        console.log(`   Dimensões originais: ${meta.width}x${meta.height} | Tamanho: ${formatMB(originalSize)}`);
-
-        // Redimensiona proporcionalmente para 1080px e comprime para JPEG alta fidelidade
+        // Redimensiona proporcionalmente mantendo 1080px e comprime
         let quality = 84;
-        let optimizedBuffer = await sharp(buffer)
-          .rotate() // respeita orientação EXIF
+        let optimizedBuffer = await sharp(originalBuffer)
+          .rotate() // Mantém orientação EXIF correta
           .resize({
-            width: meta.width >= meta.height ? 1080 : undefined,
-            height: meta.height > meta.width ? 1080 : undefined,
+            width: 1080,
+            height: 1080,
             fit: 'inside',
             withoutEnlargement: true,
           })
-          .jpeg({ quality, mozjpeg: true })
+          .jpeg({ quality, progressive: true, mozjpeg: true })
           .toBuffer();
 
-        // Se ainda for maior que 1MB, reduz qualidade progressivamente
+        // Se ainda passar de 1MB, reduz a qualidade progressivamente
         while (optimizedBuffer.length > 1024 * 1024 && quality > 50) {
           quality -= 8;
-          optimizedBuffer = await sharp(buffer)
+          optimizedBuffer = await sharp(originalBuffer)
             .rotate()
             .resize({
-              width: meta.width >= meta.height ? 1080 : undefined,
-              height: meta.height > meta.width ? 1080 : undefined,
+              width: 1080,
+              height: 1080,
               fit: 'inside',
               withoutEnlargement: true,
             })
-            .jpeg({ quality, mozjpeg: true })
+            .jpeg({ quality, progressive: true, mozjpeg: true })
             .toBuffer();
         }
 
-        const newSize = optimizedBuffer.length;
-        totalOptimizedBytes += newSize;
-        const reduction = Math.round(((originalSize - newSize) / originalSize) * 100);
+        const optimizedSize = optimizedBuffer.length;
+        const newMeta = await sharp(optimizedBuffer).metadata();
+        const savedPercent = Math.round(((originalSize - optimizedSize) / originalSize) * 100);
 
-        // Prepara envio para atualizar o arquivo no PocketBase
-        const baseName = record.file.replace(/\.[^/.]+$/, '');
-        const newFileName = `${baseName}.jpeg`;
-        const blob = new Blob([optimizedBuffer], { type: 'image/jpeg' });
+        console.log(`  Otimizado: ${newMeta.width}x${newMeta.height} px | ${formatBytes(optimizedSize)} (-${savedPercent}%)`);
 
+        // Atualiza o arquivo no PocketBase preservando o registro
         const formData = new FormData();
-        formData.append('file', blob, newFileName);
+        const blob = new Blob([optimizedBuffer], { type: 'image/jpeg' });
+        // Garante extensão .jpeg / .jpg
+        const newName = filename.replace(/\.(png|webp)$/i, '.jpeg');
+        formData.append('file', blob, newName);
 
         await pb.collection('uploads').update(record.id, formData);
+        console.log(`  ✓ PocketBase atualizado com sucesso para o registro ${record.id}`);
 
+        totalOriginal += originalSize;
+        totalOptimized += optimizedSize;
         optimizedCount++;
-        console.log(`   🎉 OTIMIZADO: ${formatMB(originalSize)} ➔ ${formatMB(newSize)} (-${reduction}%)`);
-        console.log(`   Registro ${record.id} atualizado no PocketBase com sucesso!\n`);
-      } catch (err) {
-        console.error(`❌ Erro ao processar ${record.id} - ${record.file}:`, err.message);
-        totalOptimizedBytes += originalSize;
       }
+    } catch (err) {
+      console.warn(`  ⚠️ Erro ao processar ${filename}:`, err.message);
     }
-
-    const totalSaved = totalOriginalBytes - totalOptimizedBytes;
-    const totalReduction = totalOriginalBytes > 0 ? Math.round((totalSaved / totalOriginalBytes) * 100) : 0;
-
-    console.log(`
-=============================================================================
-   ✅ PROCESSAMENTO CONCLUÍDO COM SUCESSO!
-=============================================================================
-Total de fotos otimizadas: ${optimizedCount}
-Tamanho antes: ${formatMB(totalOriginalBytes)}
-Tamanho depois: ${formatMB(totalOptimizedBytes)}
-Economia de dados total: ${formatMB(totalSaved)} (-${totalReduction}%)
-=============================================================================
-`);
-
-  } catch (err) {
-    console.error('Erro na execução:', err);
   }
+
+  console.log('\n=================================================================');
+  console.log(`🎉 OTIMIZAÇÃO CONCLUÍDA:`);
+  console.log(`Total de imagens otimizadas: ${optimizedCount}`);
+  console.log(`Tamanho original acumulado: ${formatBytes(totalOriginal)}`);
+  console.log(`Novo tamanho otimizado: ${formatBytes(totalOptimized)}`);
+  if (totalOriginal > 0) {
+    const totalReduction = Math.round(((totalOriginal - totalOptimized) / totalOriginal) * 100);
+    console.log(`Economia total de tráfego: -${totalReduction}% !`);
+  }
+  console.log('=================================================================\n');
 }
 
-compressExistingImages();
+compressAllExistingImages().catch(console.error);
